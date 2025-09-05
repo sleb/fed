@@ -9,6 +9,9 @@ import {
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./config";
 
+// Re-export the useAuth hook
+export { useAuth } from "../../hooks/useAuth";
+
 export type UserRole = "member" | "admin" | "missionary";
 
 export interface UserData {
