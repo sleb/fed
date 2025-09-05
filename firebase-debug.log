@@ -1,0 +1,93 @@
+[debug] [2025-09-05T04:19:13.703Z] ----------------------------------------------------------------------
+[debug] [2025-09-05T04:19:13.705Z] Command:       /Users/scott/.local/share/fnm/node-versions/v22.16.0/installation/bin/node /Users/scott/.local/share/fnm/node-versions/v22.16.0/installation/bin/firebase emulators:start
+[debug] [2025-09-05T04:19:13.705Z] CLI Version:   14.15.1
+[debug] [2025-09-05T04:19:13.705Z] Platform:      darwin
+[debug] [2025-09-05T04:19:13.706Z] Node Version:  v22.16.0
+[debug] [2025-09-05T04:19:13.706Z] Time:          Thu Sep 04 2025 21:19:13 GMT-0700 (Pacific Daylight Time)
+[debug] [2025-09-05T04:19:13.706Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-05T04:19:13.878Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-05T04:19:13.878Z] > authorizing via signed-in user (scott.g.lebaron@gmail.com)
+[debug] [2025-09-05T04:19:13.915Z] openjdk version "24.0.2" 2025-07-15
+
+[debug] [2025-09-05T04:19:13.916Z] OpenJDK Runtime Environment Homebrew (build 24.0.2)
+OpenJDK 64-Bit Server VM Homebrew (build 24.0.2, mixed mode, sharing)
+
+[debug] [2025-09-05T04:19:13.919Z] Parsed Java major version: 24
+[info] i  emulators: Starting emulators: apphosting, auth, firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: apphosting, auth, firestore"}}
+[debug] [2025-09-05T04:19:14.267Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-05T04:19:14.267Z] [apphosting] App Hosting Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-05T04:19:14.267Z] [auth] Authentication Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-05T04:19:14.267Z] [firestore] Firestore Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-05T04:19:14.268Z] [firestore.websocket] websocket server for firestore only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-05T04:19:14.268Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"apphosting":[{"address":"127.0.0.1","family":"IPv4","port":5002}],"auth":[{"address":"127.0.0.1","family":"IPv4","port":9099}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8080}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-09-05T04:19:14.273Z] [hub] writing locator at /var/folders/n7/xw4p8hxj5wj07bg9jgn19vzh0000gn/T/hub-bp-fed.json
+[debug] [2025-09-05T04:19:14.280Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-09-05T04:19:14.281Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
+[debug] [2025-09-05T04:19:14.281Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","/Users/scott/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar","--host","127.0.0.1","--port",8080,"--websocket_port",9150,"--project_id","bp-fed","--rules","/Users/scott/Code/fed/firestore.rules","--single_project_mode",true],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8080} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"/Users/scott/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar\",\"--host\",\"127.0.0.1\",\"--port\",8080,\"--websocket_port\",9150,\"--project_id\",\"bp-fed\",\"--rules\",\"/Users/scott/Code/fed/firestore.rules\",\"--single_project_mode\",true],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8080}"}}
+[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to \u001b[1mfirestore-debug.log\u001b[22m"}}
+[debug] [2025-09-05T04:19:14.590Z] WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by io.netty.util.internal.PlatformDependent0$4 (file:/Users/scott/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar)
+WARNING: Please consider reporting this to the maintainers of class io.netty.util.internal.PlatformDependent0$4
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+ {"metadata":{"emulator":{"name":"firestore"},"message":"WARNING: A terminally deprecated method in sun.misc.Unsafe has been called\nWARNING: sun.misc.Unsafe::objectFieldOffset has been called by io.netty.util.internal.PlatformDependent0$4 (file:/Users/scott/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar)\nWARNING: Please consider reporting this to the maintainers of class io.netty.util.internal.PlatformDependent0$4\nWARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release\n"}}
+[debug] [2025-09-05T04:19:15.206Z] Sep 04, 2025 9:19:15 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+INFO: Started WebSocket server on ws://127.0.0.1:9150
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Sep 04, 2025 9:19:15 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start\nINFO: Started WebSocket server on ws://127.0.0.1:9150\n"}}
+[debug] [2025-09-05T04:19:15.223Z] API endpoint: http:// {"metadata":{"emulator":{"name":"firestore"},"message":"API endpoint: http://"}}
+[debug] [2025-09-05T04:19:15.224Z] 127.0.0.1:8080
+If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
+
+   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+
+If you are running a Firestore in Datastore Mode project, run:
+
+   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080
+
+Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
+Dev App Server is now running.
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"127.0.0.1:8080\nIf you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:\n\n   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080\n\nIf you are running a Firestore in Datastore Mode project, run:\n\n   export DATASTORE_EMULATOR_HOST=127.0.0.1:8080\n\nNote: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.\nDev App Server is now running.\n\n"}}
+[info] ✔  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
+[debug] [2025-09-05T04:19:19.528Z] Checked if tokens are valid: true, expires at: 1757047106372
+[debug] [2025-09-05T04:19:19.528Z] Checked if tokens are valid: true, expires at: 1757047106372
+[debug] [2025-09-05T04:19:19.529Z] >>> [apiv2][query] GET https://firebaseapphosting.googleapis.com/v1beta/projects/bp-fed/locations/-/backends 
+[debug] [2025-09-05T04:19:20.166Z] <<< [apiv2][status] GET https://firebaseapphosting.googleapis.com/v1beta/projects/bp-fed/locations/-/backends 200
+[debug] [2025-09-05T04:19:20.166Z] <<< [apiv2][body] GET https://firebaseapphosting.googleapis.com/v1beta/projects/bp-fed/locations/-/backends {"backends":[{"name":"projects/bp-fed/locations/us-central1/backends/web","createTime":"2025-09-03T06:01:49.685701321Z","updateTime":"2025-09-03T06:06:23.987999Z","labels":{"deployment-tool":"cli-firebase"},"uri":"web--bp-fed.us-central1.hosted.app","managedResources":[{"runService":{"service":"projects/904976322307/locations/us-central1/services/web"}}],"uid":"74d2d936-758d-4c7f-ad6f-311ea3e2c992","etag":"qgpSrlj5PQYMz1lLwCK_WRXCvq8qzQWWXTgazFsLNDc","reconciling":false,"servingLocality":"GLOBAL_ACCESS","serviceAccount":"firebase-app-hosting-compute@bp-fed.iam.gserviceaccount.com","appId":"1:904976322307:web:000b57d5f926d4b3a62336"}]}
+[debug] [2025-09-05T04:19:20.167Z] Checked if tokens are valid: true, expires at: 1757047106372
+[debug] [2025-09-05T04:19:20.167Z] Checked if tokens are valid: true, expires at: 1757047106372
+[debug] [2025-09-05T04:19:20.168Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:904976322307:web:000b57d5f926d4b3a62336/config [none]
+[debug] [2025-09-05T04:19:20.737Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:904976322307:web:000b57d5f926d4b3a62336/config 200
+[debug] [2025-09-05T04:19:20.737Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:904976322307:web:000b57d5f926d4b3a62336/config {"projectId":"bp-fed","appId":"1:904976322307:web:000b57d5f926d4b3a62336","storageBucket":"bp-fed.firebasestorage.app","apiKey":"AIzaSyAoLnR6Pxku-LC7l3Zwvduou47l4TwIx74","authDomain":"bp-fed.firebaseapp.com","messagingSenderId":"904976322307","measurementId":"G-CW9V9G1BT1"}
+[info] i  apphosting: running custom start command: 'npm run dev' {"metadata":{"emulator":{"name":"apphosting"},"message":"running custom start command: 'npm run dev'"}}
+[info] i  apphosting: connecting apphosting emulator {"metadata":{"emulator":{"name":"apphosting"},"message":"connecting apphosting emulator"}}
+[debug] [2025-09-05T04:19:22.418Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────────┬────────────────┬─────────────────────────────────┐
+│ Emulator       │ Host:Port      │ View in Emulator UI             │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ App Hosting    │ localhost:5002 │ n/a                             │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Authentication │ 127.0.0.1:9099 │ http://127.0.0.1:4000/auth      │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Firestore      │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
+└────────────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2025-09-05T04:20:29.688Z] Sep 04, 2025 9:20:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Sep 04, 2025 9:20:29 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-09-05T04:20:30.474Z] Sep 04, 2025 9:20:30 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Sep 04, 2025 9:20:30 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-09-05T04:20:30.497Z] Sep 04, 2025 9:20:30 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Sep 04, 2025 9:20:30 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
