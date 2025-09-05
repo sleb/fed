@@ -11,6 +11,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Debug Firebase config in development
+if (process.env.NODE_ENV === "development") {
+  console.log("🔧 Firebase Config Debug:");
+  console.log("- Project ID:", firebaseConfig.projectId);
+  console.log("- Auth Domain:", firebaseConfig.authDomain);
+  console.log("- API Key:", firebaseConfig.apiKey ? "✅ Set" : "❌ Missing");
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
@@ -20,11 +28,22 @@ export const db = getFirestore(app);
 
 // Connect to emulators in development
 if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
-  connectAuthEmulator(auth, "http://localhost:9099", {
-    disableWarnings: true,
-  });
+  try {
+    console.log("🔌 Connecting to Firebase emulators...");
 
-  connectFirestoreEmulator(db, "localhost", 8080);
+    console.log("🔐 Connecting to Auth emulator on localhost:9099");
+    connectAuthEmulator(auth, "http://localhost:9099", {
+      disableWarnings: true,
+    });
+
+    console.log("🗄️ Connecting to Firestore emulator on localhost:8080");
+    connectFirestoreEmulator(db, "localhost", 8080);
+
+    console.log("✅ Emulator connections established");
+  } catch {
+    // Silently handle reconnection attempts - Firebase handles this gracefully
+    console.log("ℹ️ Emulator connection attempt (may already be connected)");
+  }
 }
 
 export { app };

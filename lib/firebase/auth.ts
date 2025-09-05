@@ -15,7 +15,6 @@ export interface UserData {
   id: string;
   name: string;
   email: string;
-  photoURL?: string;
   role: UserRole;
   createdAt: Date;
   lastLoginAt: Date;
@@ -33,14 +32,18 @@ googleProvider.addScope("profile");
 // Sign in with Google
 export const signInWithGoogle = async (): Promise<UserCredential> => {
   try {
+    console.log("🚀 Starting Google sign-in...");
     const result = await signInWithPopup(auth, googleProvider);
+    console.log("✅ Google sign-in successful:", result.user.email);
 
     // Check if user document exists, create if it doesn't
+    console.log("📝 Creating/updating user document...");
     await createUserDocumentIfNotExists(result.user);
+    console.log("✅ User document processed");
 
     return result;
   } catch (error) {
-    console.error("Error signing in with Google:", error);
+    console.error("❌ Error signing in with Google:", error);
     throw error;
   }
 };
@@ -49,29 +52,38 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 export const createUserDocumentIfNotExists = async (
   user: User,
 ): Promise<void> => {
-  const userDocRef = doc(db, "users", user.uid);
-  const userDoc = await getDoc(userDocRef);
+  try {
+    console.log("🔍 Checking user document for:", user.uid);
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    console.log("📄 Document exists:", userDoc.exists());
 
-  if (!userDoc.exists()) {
-    const userData: UserData = {
-      id: user.uid,
-      name: user.displayName || "Unknown User",
-      email: user.email || "",
-      photoURL: user.photoURL || undefined,
-      role: "member", // Default role for new users
-      createdAt: new Date(),
-      lastLoginAt: new Date(),
-      preferences: {
-        emailNotifications: true,
-        smsNotifications: false,
-      },
-    };
+    if (!userDoc.exists()) {
+      console.log("📝 Creating new user document...");
+      const userData: UserData = {
+        id: user.uid,
+        name: user.displayName || "Unknown User",
+        email: user.email || "",
+        role: "member", // Default role for new users
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+        preferences: {
+          emailNotifications: true,
+          smsNotifications: false,
+        },
+      };
 
-    await setDoc(userDocRef, userData);
-    console.log("Created new user document:", userData);
-  } else {
-    // Update last login time for existing users
-    await setDoc(userDocRef, { lastLoginAt: new Date() }, { merge: true });
+      console.log("💾 Saving user data:", userData);
+      await setDoc(userDocRef, userData);
+      console.log("✅ Created new user document successfully");
+    } else {
+      console.log("⏰ Updating last login time for existing user");
+      await setDoc(userDocRef, { lastLoginAt: new Date() }, { merge: true });
+      console.log("✅ Updated last login time");
+    }
+  } catch (error) {
+    console.error("❌ Error in createUserDocumentIfNotExists:", error);
+    throw error;
   }
 };
 
