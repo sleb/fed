@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   CompanionshipService,
   MissionaryService,
@@ -70,7 +70,7 @@ const generateCompanionshipName = (
 };
 
 export default function CompanionshipsPage() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [companionships, setCompanionships] = useState<Companionship[]>([]);
   const [filteredCompanionships, setFilteredCompanionships] = useState<
@@ -113,23 +113,10 @@ export default function CompanionshipsPage() {
     notes: "",
   });
 
-  // Redirect non-authenticated users
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.replace("/login");
-      } else if (!isAdmin) {
-        router.replace("/signup");
-      }
-    }
-  }, [user, authLoading, isAdmin, router]);
-
   // Load data
   useEffect(() => {
-    if (isAdmin) {
-      loadData();
-    }
-  }, [isAdmin]);
+    loadData();
+  }, []);
 
   // Filter companionships
   useEffect(() => {
@@ -418,7 +405,7 @@ export default function CompanionshipsPage() {
   // Get unique areas for autocomplete
   const existingAreas = [...new Set(companionships.map((c) => c.area))].sort();
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -429,7 +416,7 @@ export default function CompanionshipsPage() {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user) {
     return null;
   }
 

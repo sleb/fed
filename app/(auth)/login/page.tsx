@@ -1,12 +1,22 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRedirectPath, onAuthStateChange, signInWithGoogle } from '@/lib/firebase/auth';
-import { User } from 'firebase/auth';
-import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  getRedirectPath,
+  onAuthStateChange,
+  signInWithGoogle,
+} from "@/lib/firebase/auth";
+import { User } from "firebase/auth";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -23,9 +33,9 @@ export default function LoginPage() {
           const redirectPath = await getRedirectPath(user);
           router.push(redirectPath);
         } catch (error) {
-          console.error('Error getting redirect path:', error);
+          console.error("Error getting redirect path:", error);
           // Default fallback
-          router.push('/signup');
+          router.push("/calendar");
         }
       }
     });
@@ -41,8 +51,8 @@ export default function LoginPage() {
       await signInWithGoogle();
       // Redirect is handled by the auth state change listener
     } catch (error) {
-      console.error('Login failed:', error);
-      setError('Failed to sign in. Please try again.');
+      console.error("Login failed:", error);
+      setError("Failed to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -85,7 +95,8 @@ export default function LoginPage() {
               Welcome
             </CardTitle>
             <CardDescription className="text-center">
-              Sign in to coordinate dinner schedules and support our missionaries in the field.
+              Sign in to coordinate dinner schedules and support our
+              missionaries in the field.
             </CardDescription>
           </CardHeader>
 
@@ -138,11 +149,10 @@ export default function LoginPage() {
             {/* Help Text */}
             <div className="text-center text-xs text-muted-foreground space-y-2">
               <p>
-                By signing in, you agree to help coordinate meals for our missionaries.
+                By signing in, you agree to help coordinate meals for our
+                missionaries.
               </p>
-              <p>
-                Need help? Contact your ward administrator.
-              </p>
+              <p>Need help? Contact your ward administrator.</p>
             </div>
           </CardContent>
         </Card>

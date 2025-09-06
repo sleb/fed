@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "@/lib/firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { seedDatabase } from "@/lib/firebase/seedData";
 import {
   AlertTriangle,
@@ -19,25 +19,14 @@ import {
   Utensils,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function AdminPage() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Redirect non-authenticated users
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.replace("/login");
-      } else if (!isAdmin) {
-        router.replace("/signup");
-      }
-    }
-  }, [user, authLoading, isAdmin, router]);
+  const router = useRouter();
 
   const handleSeedDatabase = async () => {
     setSeeding(true);
@@ -57,21 +46,11 @@ export default function AdminPage() {
     }
   };
 
-  // Don't render anything until auth is loaded
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Component is now protected by AdminRoute layout, no loading check needed
 
-  // Redirect will handle non-admin users, but show fallback just in case
-  if (!user || !isAdmin) {
-    return null; // Let the redirect handle this
+  // Component is now protected by AdminRoute layout
+  if (!user) {
+    return null; // Let the auth route handle this
   }
 
   return (

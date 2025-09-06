@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   CompanionshipService,
   MissionaryService,
@@ -46,7 +46,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function MissionariesPage() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [missionaries, setMissionaries] = useState<Missionary[]>([]);
   const [filteredMissionaries, setFilteredMissionaries] = useState<
@@ -74,23 +74,10 @@ export default function MissionariesPage() {
     notes: "",
   });
 
-  // Redirect non-authenticated users
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.replace("/login");
-      } else if (!isAdmin) {
-        router.replace("/signup");
-      }
-    }
-  }, [user, authLoading, isAdmin, router]);
-
   // Load data
   useEffect(() => {
-    if (isAdmin) {
-      loadData();
-    }
-  }, [isAdmin]);
+    loadData();
+  }, []);
 
   // Filter missionaries
   useEffect(() => {
@@ -244,7 +231,7 @@ export default function MissionariesPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -255,7 +242,7 @@ export default function MissionariesPage() {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user) {
     return null;
   }
 

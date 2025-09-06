@@ -227,7 +227,7 @@ fed/
 │   ├── (auth)/                   # Authentication route group
 │   │   └── login/                # Google OAuth login page
 │   ├── admin/                    # Admin dashboard and tools
-│   ├── signup/                   # Member signup interface
+│   ├── calendar/                 # Member calendar and signup interface
 │   ├── globals.css               # Global styles and Tailwind config
 │   └── layout.tsx               # Root layout with fonts and metadata
 ├── components/                   # Reusable React components

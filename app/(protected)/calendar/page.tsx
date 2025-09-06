@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { CalendarService } from "@/lib/firebase/calendar";
 import { DinnerSlotService, SignupService } from "@/lib/firebase/firestore";
 import { Companionship, DinnerSlot, Missionary, Signup } from "@/types";
@@ -24,7 +24,7 @@ import {
   MapPin,
   Phone,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+
 import { useCallback, useEffect, useState } from "react";
 
 interface CalendarDay {
@@ -34,8 +34,7 @@ interface CalendarDay {
 }
 
 export default function CalendarPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
 
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -68,11 +67,6 @@ export default function CalendarPage() {
   });
 
   // Redirect non-authenticated users
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace("/login");
-    }
-  }, [user, authLoading, router]);
 
   const loadCalendarData = useCallback(async () => {
     try {
@@ -373,7 +367,7 @@ export default function CalendarPage() {
     "December",
   ];
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

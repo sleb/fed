@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { CalendarService } from "@/lib/firebase/calendar";
 import {
   CalendarTemplateService,
@@ -61,7 +61,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export default function AdminCalendarPage() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [templates, setTemplates] = useState<CalendarTemplate[]>([]);
   const [companionships, setCompanionships] = useState<Companionship[]>([]);
@@ -105,22 +105,11 @@ export default function AdminCalendarPage() {
   const [generating, setGenerating] = useState(false);
 
   // Redirect non-authenticated users
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.replace("/login");
-      } else if (!isAdmin) {
-        router.replace("/signup");
-      }
-    }
-  }, [user, authLoading, isAdmin, router]);
 
   // Load data
   useEffect(() => {
-    if (isAdmin) {
-      loadData();
-    }
-  }, [isAdmin]);
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
@@ -342,7 +331,7 @@ export default function AdminCalendarPage() {
     return companionships.filter((c) => !companionshipsWithCalendars.has(c.id));
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -353,7 +342,7 @@ export default function AdminCalendarPage() {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user) {
     return null;
   }
 

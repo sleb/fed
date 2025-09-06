@@ -143,11 +143,11 @@ export const getRedirectPath = async (user: User): Promise<string> => {
 
   switch (userData?.role) {
     case "admin":
-      return "/dashboard";
+      return "/admin";
     case "missionary":
-      return "/missionaries/me";
+      return "/calendar";
     case "member":
     default:
-      return "/signup";
+      return "/calendar";
   }
 };
