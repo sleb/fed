@@ -1,77 +1,73 @@
-# Missionary Dinner Management System
+# Missionary Dinner Coordination System
 
-A web-based application to help local congregations coordinate and manage dinner schedules for missionaries. Members can sign up to provide meals, view missionary information, and administrators can manage schedules and export to Google Calendar/Sheets.
+A modern web application to help local congregations coordinate and manage dinner schedules for missionaries. Built with Next.js, Firebase, and Tailwind CSS for a seamless user experience.
 
 ## 🎯 Project Overview
 
-This app streamlines the process of organizing meals for missionaries by providing:
+This application streamlines the process of organizing meals for missionaries by providing:
 
-- Easy signup system for congregation members
-- Missionary profile management with dietary restrictions
-- Automated scheduling and notifications
-- Integration with Google Calendar and Sheets
-- Email notifications and reminders
+- **Easy signup system** for congregation members to volunteer for dinner slots
+- **Missionary profile management** with dietary restrictions and preferences
+- **Real-time availability tracking** with automatic slot assignment
+- **Role-based access control** for members and administrators
+- **Mobile-first responsive design** for accessibility on all devices
+
+## ✅ Current Status - **FUNCTIONAL MVP**
+
+The core application is **fully operational** with the following completed features:
+
+### 🔐 Authentication & User Management
+
+- **Google OAuth integration** for secure, passwordless authentication
+- **Role-based access control** (Member, Admin, Missionary roles)
+- **Automatic user document creation** with preferences
+- **Secure redirect flows** based on user permissions
+
+### 👥 User Interfaces
+
+- **Member Signup Page** (`/signup`) - Browse and sign up for dinner slots
+- **Admin Dashboard** (`/admin`) - Database management and seeding tools
+- **Login Flow** (`/login`) - Google authentication with role-based redirects
+
+### 📊 Data Management
+
+- **Real-time dinner slot availability** with automatic updates
+- **Missionary profiles** with dietary restrictions, allergies, and preferences
+- **Signup tracking** with contact preferences and special requests
+- **Automatic slot assignment/release** when members sign up or cancel
+
+### 🎨 User Experience
+
+- **Professional church-appropriate design** with shadcn/ui components
+- **Tailwind CSS v4** for modern styling and responsive layouts
+- **Loading states and error handling** throughout the application
+- **Intuitive filtering** by date range, area, and availability
 
 ## 🛠 Tech Stack
 
 ### Frontend
 
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type safety and better developer experience
-- **Tailwind CSS** - Utility-first CSS framework
-- **Shadcn/ui** - Modern UI components
+- **Next.js 15** - React framework with App Router and Turbopack
+- **TypeScript** - Full type safety throughout the application
+- **Tailwind CSS v4** - Modern utility-first CSS framework
+- **shadcn/ui** - High-quality, accessible UI components
+- **Lucide React** - Beautiful, consistent icons
 
 ### Backend & Database
 
-- **Firebase App Hosting** - Hosting and deployment
-- **Firestore** - NoSQL database for storing all app data
-- **Firebase Authentication** - User management and authentication
-- **Cloud Functions** - Serverless functions for background tasks
+- **Firebase v12** - Complete backend-as-a-service solution
+  - **Firestore** - NoSQL database with real-time synchronization
+  - **Firebase Authentication** - Google OAuth integration
+  - **Security Rules** - Server-side access control and data protection
+  - **Firebase Emulator Suite** - Local development environment
 
-### Integrations
+### Development Tools
 
-- **Google Calendar API** - Sync dinner schedules
-- **Google Sheets API** - Export schedule data
-- **Gmail API / SendGrid** - Email notifications
-- **Twilio** (Future) - SMS notifications
+- **ESLint** - Code linting and quality enforcement
+- **TypeScript** - Static type checking
+- **Firebase CLI** - Deployment and emulator management
 
-## 📁 Project Structure
-
-```
-missionary-dinner-app/
-├── app/                          # Next.js App Router
-│   ├── (auth)/                   # Authentication pages
-│   │   ├── login/
-│   │   └── register/
-│   ├── dashboard/                # Admin dashboard
-│   │   ├── missionaries/
-│   │   ├── schedules/
-│   │   └── users/
-│   ├── signup/                   # Member signup flow
-│   ├── missionaries/             # Missionary profiles
-│   ├── api/                      # API routes
-│   │   ├── google-calendar/
-│   │   ├── google-sheets/
-│   │   ├── notifications/
-│   │   └── webhooks/
-│   └── globals.css
-├── components/                   # Reusable UI components
-│   ├── ui/                      # Base UI components
-│   ├── forms/                   # Form components
-│   ├── calendar/                # Calendar components
-│   └── layout/                  # Layout components
-├── lib/                         # Utility functions
-│   ├── firebase/                # Firebase configuration
-│   ├── google-apis/             # Google API helpers
-│   ├── utils/                   # General utilities
-│   └── validations/             # Form validation schemas
-├── types/                       # TypeScript type definitions
-├── hooks/                       # Custom React hooks
-├── public/                      # Static assets
-└── docs/                        # Project documentation
-```
-
-## 🗃 Database Schema (Firestore)
+## 🗃 Database Schema
 
 ### Collections
 
@@ -84,8 +80,9 @@ missionary-dinner-app/
   email: string;
   phone?: string;
   role: 'member' | 'admin' | 'missionary';
-  createdAt: Timestamp;
-  preferences?: {
+  createdAt: Date;
+  lastLoginAt: Date;
+  preferences: {
     emailNotifications: boolean;
     smsNotifications: boolean;
   };
@@ -99,14 +96,19 @@ missionary-dinner-app/
   id: string;
   name: string;
   companionName?: string;
-  phone: string;
-  email: string;
   area: string;
-  allergies: string[];
-  dietaryRestrictions: string[];
-  preferences: string;
-  active: boolean;
-  createdAt: Timestamp;
+  address: string;
+  phone?: string;
+  email?: string;
+  apartmentNumber?: string;
+  zone?: string;
+  district?: string;
+  dinnerPreferences?: string[];
+  allergies?: string[];
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
@@ -115,14 +117,21 @@ missionary-dinner-app/
 ```typescript
 {
   id: string;
-  date: string; // YYYY-MM-DD
   missionaryId: string;
+  date: Date;
+  dayOfWeek: string;
+  time: string; // e.g., "6:00 PM"
+  status: 'available' | 'assigned' | 'completed' | 'cancelled';
   assignedUserId?: string;
-  mealType: 'lunch' | 'dinner';
-  status: 'open' | 'assigned' | 'confirmed' | 'completed';
+  assignedUserName?: string;
+  assignedUserEmail?: string;
+  assignedUserPhone?: string;
+  specialRequests?: string;
+  guestCount: number;
   notes?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
 }
 ```
 
@@ -132,150 +141,201 @@ missionary-dinner-app/
 {
   id: string;
   userId: string;
-  slotId: string;
-  signupDate: Timestamp;
-  memberNotes?: string;
-  confirmed: boolean;
+  userName: string;
+  userEmail: string;
+  userPhone?: string;
+  dinnerSlotId: string;
+  missionaryId: string;
+  missionaryName: string;
+  dinnerDate: Date;
+  dinnerTime: string;
+  guestCount: number;
+  status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
+  specialRequests?: string;
+  contactPreference: 'email' | 'phone' | 'both';
+  reminderSent: boolean;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
-## 🚀 Development Roadmap
+## 🏗 Project Structure
 
-### Phase 1: MVP (Weeks 1-3)
+```
+fed/
+├── app/                          # Next.js App Router
+│   ├── (auth)/                   # Authentication route group
+│   │   └── login/                # Google OAuth login page
+│   ├── admin/                    # Admin dashboard and tools
+│   ├── signup/                   # Member signup interface
+│   ├── globals.css               # Global styles and Tailwind config
+│   └── layout.tsx               # Root layout with fonts and metadata
+├── components/                   # Reusable React components
+│   └── ui/                      # shadcn/ui component library
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── dialog.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── select.tsx
+│       ├── textarea.tsx
+│       └── badge.tsx
+├── hooks/                       # Custom React hooks
+│   ├── useAuth.ts              # Authentication state management
+│   └── useSignups.ts           # Signup and slot management
+├── lib/                        # Utility functions and configurations
+│   ├── firebase/               # Firebase setup and utilities
+│   │   ├── config.ts          # Firebase initialization
+│   │   ├── auth.ts            # Authentication helpers
+│   │   ├── signups.ts         # Database operations for signups
+│   │   └── seedData.ts        # Test data generation
+│   └── utils.ts               # General utility functions
+├── types/                      # TypeScript type definitions
+│   └── index.ts               # Core application types
+├── firebase.json              # Firebase project configuration
+├── firestore.rules           # Firestore security rules
+└── postcss.config.js         # PostCSS configuration for Tailwind v4
+```
 
-- [x] Project setup and configuration
-- [ ] Firebase setup (Auth, Firestore, Hosting)
-- [ ] Basic authentication (email/password)
-- [ ] User role management
-- [ ] Missionary profile CRUD
-- [ ] Simple dinner slot creation
-- [ ] Basic signup functionality
-- [ ] Email notifications (basic)
+## 🔒 Security & Design Decisions
 
-### Phase 2: Core Features (Weeks 4-6)
+### Authentication Strategy
 
-- [ ] Calendar view for dinner slots
-- [ ] Advanced admin dashboard
-- [ ] Member dashboard and profile management
-- [ ] Automated reminder system
-- [ ] Google Calendar integration
-- [ ] Mobile-responsive design
-- [ ] Form validations and error handling
+**Decision: Google OAuth Only (No Email/Password)**
 
-### Phase 3: Enhanced Features (Weeks 7-9)
+**Rationale:**
 
-- [ ] Google Sheets export functionality
-- [ ] Bulk operations (create multiple slots)
-- [ ] Recurring dinner patterns
-- [ ] Advanced filtering and search
-- [ ] Email template customization
-- [ ] Waitlist functionality
-- [ ] Basic analytics and reporting
+- **Simplified UX** - No password management for users
+- **Enhanced Security** - Leverage Google's robust authentication
+- **Reduced Complexity** - No password reset flows or email verification
+- **Church Context** - Most members already have Google accounts
+- **Mobile Friendly** - Seamless experience across devices
 
-### Phase 4: Polish & Advanced Features (Weeks 10-12)
+### Data Access Control
 
-- [ ] SMS notifications (Twilio)
-- [ ] Progressive Web App (PWA) features
-- [ ] Advanced analytics dashboard
-- [ ] Automated conflict resolution
-- [ ] Multi-language support
-- [ ] Enhanced security features
-- [ ] Performance optimizations
+- **Firestore Security Rules** enforce server-side access control
+- **Role-based permissions** prevent unauthorized access to admin features
+- **Users can only manage their own signups** and view necessary missionary info
+- **Client-side role checks for UX**, server-side enforcement via Firebase rules
 
-## 🛡 Security Considerations
+### User Experience Principles
 
-- **Firestore Security Rules** - Protect missionary contact information
-- **Role-based access control** - Members only see necessary information
-- **Input validation** - Server-side validation for all forms
-- **API key management** - Secure handling of Google API credentials
-- **HTTPS enforcement** - All communications encrypted
-- **Data privacy compliance** - GDPR considerations for member data
+- **Mobile-first design** for accessibility in all environments
+- **Progressive enhancement** with loading states and error handling
+- **Real-time updates** to prevent double-booking and conflicts
+- **Intuitive navigation** with clear role-based interfaces
 
-## 🚦 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Firebase CLI
-- Google Cloud Console account (for Calendar/Sheets APIs)
+- Firebase CLI (`npm install -g firebase-tools`)
+- Firebase project with Authentication and Firestore enabled
 
 ### Installation
 
-1. Clone the repository
+1. **Clone and install dependencies**
 
 ```bash
-git clone https://github.com/sleb/missionary-dinner-app.git
-cd missionary-dinner-app
-```
-
-2. Install dependencies
-
-```bash
+git clone <repository-url>
+cd fed
 npm install
 ```
 
-3. Set up environment variables
+2. **Set up Firebase**
 
 ```bash
-cp .env.example .env.local
-# Add your Firebase and Google API credentials
+# Login to Firebase
+firebase login
+
+# Initialize Firebase (select existing project)
+firebase use --add
+
+# Start emulators for local development
+firebase emulators:start
 ```
 
-4. Run the development server
+3. **Configure environment**
+
+```bash
+# Copy Firebase config to your project
+# Update lib/firebase/config.ts with your project details
+```
+
+4. **Run development server**
 
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000)
+5. **Seed test data** (optional)
 
-### Firebase Setup
+- Visit `http://localhost:3000/admin` as an admin user
+- Click "Seed Test Data" to populate with sample missionaries and dinner slots
 
-1. Create a new Firebase project
-2. Enable Authentication, Firestore, and Hosting
-3. Configure Google OAuth for Calendar/Sheets access
-4. Deploy security rules
+### Firebase Configuration
 
-## 📝 Contributing
+**Required Firebase services:**
+
+- **Authentication** with Google OAuth provider enabled
+- **Firestore Database** with security rules deployed
+- **Firebase Emulator Suite** for local development
+
+**Firestore Security Rules:**
+The application includes comprehensive security rules that:
+
+- Allow users to read/write their own data
+- Restrict admin operations to admin users only
+- Prevent unauthorized access to missionary contact information
+- Enable users to manage their own signups while protecting others' data
+
+## 📋 Available Scripts
+
+```bash
+# Development
+npm run dev          # Start development server with Turbopack
+npm run build        # Build production application
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Firebase
+firebase emulators:start    # Start Firebase emulators
+firebase deploy            # Deploy to Firebase Hosting
+firebase deploy --only firestore:rules  # Deploy security rules only
+```
+
+## 🎯 Next Steps & Roadmap
+
+### Phase 2: Enhanced Features (Upcoming)
+
+- [ ] **Calendar integration** - Google Calendar sync for dinner schedules
+- [ ] **Email notifications** - Automated reminders and confirmations
+- [ ] **Advanced admin tools** - Bulk operations, reporting, analytics
+- [ ] **Recurring schedules** - Weekly/monthly dinner patterns
+- [ ] **Missionary management** - Full CRUD operations for missionary profiles
+- [ ] **Enhanced filtering** - Search by missionary name, dietary restrictions
+- [ ] **Mobile app** - Progressive Web App (PWA) features
+
+### Phase 3: Advanced Features (Future)
+
+- [ ] **SMS notifications** via Twilio integration
+- [ ] **Multi-language support** for diverse congregations
+- [ ] **Advanced analytics** - Signup patterns, member engagement metrics
+- [ ] **Export functionality** - Google Sheets integration for scheduling data
+- [ ] **Waitlist management** - Handle oversubscribed dinner slots
+- [ ] **Recurring donations** - Track member participation over time
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📋 Environment Variables
-
-```bash
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-
-# Google APIs
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_CALENDAR_API_KEY=
-GOOGLE_SHEETS_API_KEY=
-
-# Email Service
-SENDGRID_API_KEY=
-SMTP_FROM_EMAIL=
-
-# App Configuration
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-## 🤝 Support
-
-For questions or support, please:
-
-- Open an issue on GitHub
-- Contact the development team
-- Check the documentation in `/docs`
+3. Make your changes with proper TypeScript types
+4. Test with Firebase emulators
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## 📄 License
 
@@ -284,3 +344,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with ❤️ for missionary service coordination**
+
+> _"And behold, I tell you these things that ye may learn wisdom; that ye may learn that when ye are in the service of your fellow beings ye are only in the service of your God."_ - Mosiah 2:17
