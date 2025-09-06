@@ -148,7 +148,6 @@ const generateDinnerSlots = (
     "Friday",
     "Saturday",
   ];
-  const timeSlots = ["5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM"];
 
   // Generate slots for next 4 weeks
   for (let week = 0; week < 4; week++) {
@@ -159,19 +158,15 @@ const generateDinnerSlots = (
       // Skip Sundays (day 0) for dinner appointments
       if (date.getDay() === 0) continue;
 
-      // Each companionship gets 2-3 dinner slots per week
+      // Each companionship gets some dinner slots per week
       companionshipIds.forEach((companionshipId, index) => {
         // Skip some days to make it realistic (not every companionship every day)
         if ((day + index) % 3 === 0) return;
 
-        const timeSlot =
-          timeSlots[Math.floor(Math.random() * timeSlots.length)];
-
         slots.push({
-          missionaryId: companionshipId, // Note: This field represents companionshipId in our new model
+          companionshipId: companionshipId,
           date,
           dayOfWeek: daysOfWeek[date.getDay()],
-          time: timeSlot,
           status: "available",
           guestCount: 2, // Usually 2 missionaries in a companionship
           notes: "",

@@ -11,7 +11,13 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/lib/firebase/auth";
 import { seedDatabase } from "@/lib/firebase/seedData";
-import { AlertTriangle, Database, Users, Utensils } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  Database,
+  Users,
+  Utensils,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -97,17 +103,17 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card
             className="hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => router.push("/signup")}
+            onClick={() => router.push("/calendar")}
           >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Utensils className="h-5 w-5" />
-                Dinner Signups
+                Dinner Calendar
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                View and manage dinner signups
+                View calendar and manage dinner signups
               </p>
             </CardContent>
           </Card>
@@ -142,6 +148,23 @@ export default function AdminPage() {
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Manage companionships and assignments
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => router.push("/admin/calendar")}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Calendar className="h-5 w-5" />
+                Calendar Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Create dinner calendars and schedules
               </p>
             </CardContent>
           </Card>
@@ -264,9 +287,9 @@ export default function AdminPage() {
                     <Button
                       variant="link"
                       className="p-0 h-auto"
-                      onClick={() => router.push("/signup")}
+                      onClick={() => router.push("/calendar")}
                     >
-                      Signup Page
+                      Calendar Page
                     </Button>
                   </li>
                   <li>2. Test signing up for dinner slots</li>

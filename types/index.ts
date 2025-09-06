@@ -25,10 +25,9 @@ export interface Companionship {
 
 export interface DinnerSlot {
   id: string;
-  missionaryId: string;
+  companionshipId: string; // Updated to reference companionship directly
   date: Date;
   dayOfWeek: string;
-  time: string; // e.g., "6:00 PM"
   status: "available" | "assigned" | "completed" | "cancelled";
   assignedUserId?: string;
   assignedUserName?: string;
@@ -42,6 +41,32 @@ export interface DinnerSlot {
   createdBy: string; // Admin who created the slot
 }
 
+export interface CalendarTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. Default: [1,2,3,4,5,6] (Mon-Sat)
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
+export interface CompanionshipCalendar {
+  id: string;
+  companionshipId: string;
+  name: string;
+  description?: string;
+  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. e.g., [1,2,3,4,5,6] (Mon-Sat)
+  startDate: Date;
+  endDate?: Date; // Optional: null means ongoing
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
 export interface Signup {
   id: string;
   userId: string;
@@ -52,7 +77,6 @@ export interface Signup {
   missionaryId: string;
   missionaryName: string;
   dinnerDate: Date;
-  dinnerTime: string;
   guestCount: number;
   status: "confirmed" | "pending" | "cancelled" | "completed";
   specialRequests?: string;

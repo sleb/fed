@@ -27,30 +27,34 @@ The core application is **fully operational** with the following completed featu
 
 ### 👥 User Interfaces
 
-- **Member Signup Page** (`/signup`) - Browse and sign up for dinner slots
-- **Admin Dashboard** (`/admin`) - Database management and seeding tools
+- **Member Calendar** (`/calendar`) - Visual calendar interface for viewing and signing up for dinner slots
+- **Admin Dashboard** (`/admin`) - Database management and central navigation hub
 - **Missionary Management** (`/admin/missionaries`) - Create and manage individual missionary records
 - **Companionship Management** (`/admin/companionships`) - Manage missionary companionships with status validation
+- **Calendar Management** (`/admin/calendar`) - Create and manage dinner calendars and schedules
 - **Login Flow** (`/login`) - Google authentication with role-based redirects
 
 ### 📊 Data Management
 
-- **Companionship-based organization** - missionaries grouped by service area (2-3 per companionship)
+- **Calendar-based scheduling** - visual month-by-month dinner coordination system
+- **Companionship-focused organization** - one dinner slot per day per companionship (simplified scheduling)
 - **Individual missionary profiles** with personal contact info, dietary restrictions, and preferences
 - **Full missionary CRUD operations** - create, edit, and manage missionary records through admin interface
 - **Smart missionary assignment** - visual interface for adding/removing missionaries from companionships
 - **Companionship validation** - visual warnings for incomplete companionships needing more members
 - **Aggregated allergy tracking** - automatically combines individual allergies for companionship dinner planning
-- **Real-time dinner slot availability** with automatic updates
-- **Signup tracking** with contact preferences and special requests
-- **Automatic slot assignment/release** when members sign up or cancel
+- **Calendar template system** - reusable schedule patterns for different companionships
+- **Auto-generated dinner slots** - bulk slot creation based on calendar schedules
+- **Real-time calendar updates** with visual availability indicators
 
 ### 🎨 User Experience
 
+- **Intuitive calendar interface** - familiar month-view layout for easy navigation
+- **Color-coded availability** - visual indicators for available, taken, and user's own signups
+- **One-click signup** - simple interaction model for dinner slot booking
 - **Professional church-appropriate design** with shadcn/ui components
 - **Tailwind CSS v4** for modern styling and responsive layouts
 - **Loading states and error handling** throughout the application
-- **Intuitive filtering** by date range, area, and availability
 - **Search and filter functionality** for missionary selection and management
 
 ## 🛠 Tech Stack
@@ -135,14 +139,14 @@ The core application is **fully operational** with the following completed featu
 ```
 
 **dinnerSlots**
+**dinnerSlots**
 
 ```typescript
 {
   id: string;
-  missionaryId: string; // References companionship ID (naming kept for compatibility)
+  companionshipId: string; // References companionship directly
   date: Date;
   dayOfWeek: string;
-  time: string; // e.g., "6:00 PM"
   status: 'available' | 'assigned' | 'completed' | 'cancelled';
   assignedUserId?: string;
   assignedUserName?: string;
@@ -151,6 +155,40 @@ The core application is **fully operational** with the following completed featu
   specialRequests?: string;
   guestCount: number; // Number of missionaries in companionship (usually 2)
   notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+```
+
+**calendarTemplates**
+
+```typescript
+{
+  id: string;
+  name: string;
+  description?: string;
+  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. [1,2,3,4,5,6] = Mon-Sat
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+```
+
+**companionshipCalendars**
+
+```typescript
+{
+  id: string;
+  companionshipId: string;
+  name: string;
+  description?: string;
+  daysOfWeek: number[]; // Days when dinner slots are available
+  startDate: Date;
+  endDate?: Date; // Optional: null means ongoing
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -170,7 +208,6 @@ The core application is **fully operational** with the following completed featu
   missionaryId: string;
   missionaryName: string; // Auto-generated companionship display name
   dinnerDate: Date;
-  dinnerTime: string;
   guestCount: number;
   status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
   specialRequests?: string;
@@ -351,12 +388,21 @@ firebase deploy --only firestore:rules  # Deploy security rules only
   - ✅ Comprehensive companionship CRUD with address, phone, and notes management
   - [ ] Soft delete with restore functionality (future enhancement)
   - [ ] Area-based organization and autocomplete (future enhancement)
-- [ ] **Companionship-Based Calendar System** - Enhanced scheduling approach
-  - **Ward-level default calendar** - Set congregation-wide dinner schedule (e.g., "Monday-Friday 6:00 PM")
-  - **Companionship = Area** - Missionaries serving in the same area form a companionship
-  - **Companionship overrides** - Customize schedules for specific companionships when needed
+
+- [x] **Calendar System** - Visual dinner coordination interface
+  - ✅ Member calendar view (`/calendar`) with month navigation and visual slot indicators
+  - ✅ Admin calendar management (`/admin/calendar`) for templates and companionship schedules
+  - ✅ Calendar template system for reusable schedule patterns
+  - ✅ Simplified scheduling model (one slot per day per companionship)
+  - ✅ Auto-generation of dinner slots based on calendar schedules
+  - ✅ Color-coded availability (available, taken, user signups)
+  - ✅ One-click signup and modification system
+  - ✅ Bulk calendar setup for all companionships
+- [ ] **Enhanced Calendar Features** - Advanced scheduling capabilities
+  - **Recurring patterns** - Set up repeating dinner schedules beyond basic day-of-week
   - **Member feeding history** - Track which families have fed which companionships
-  - **Automatic slot generation** - Create dinner slots based on ward calendar and active companionships
+  - **Blackout dates** - Ability to skip holidays and special events
+  - **Custom time slots** - Option to add specific times for companionships that need them
 - [ ] **Calendar integration** - Google Calendar sync for dinner schedules
 - [ ] **Email notifications** - Automated reminders and confirmations
 - [ ] **Enhanced filtering** - Search by missionary name, dietary restrictions
