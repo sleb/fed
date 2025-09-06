@@ -27,12 +27,14 @@ The core application is **fully operational** with the following completed featu
 
 ### 👥 User Interfaces
 
-- **Member Calendar** (`/calendar`) - Visual calendar interface for viewing and signing up for dinner slots
-- **Admin Dashboard** (`/admin`) - Database management and central navigation hub
-- **Missionary Management** (`/admin/missionaries`) - Create and manage individual missionary records
-- **Companionship Management** (`/admin/companionships`) - Manage missionary companionships with status validation
-- **Calendar Management** (`/admin/calendar`) - Create and manage dinner calendars and schedules
-- **Login Flow** (`/login`) - Google authentication with role-based redirects
+- **Responsive Navigation** - Desktop header with dropdown menus and mobile hamburger menu with role-based visibility
+- **Landing Page** (`/`) - Welcome page with features overview and role-based action buttons
+- **Member Calendar** (`/calendar`) - Protected visual calendar interface for viewing and signing up for dinner slots
+- **Admin Dashboard** (`/admin`) - Protected admin-only database management and central navigation hub
+- **Missionary Management** (`/admin/missionaries`) - Protected admin tools for creating and managing missionary records
+- **Companionship Management** (`/admin/companionships`) - Protected admin interface for managing companionships with validation
+- **Calendar Management** (`/admin/calendar`) - Protected admin tools for creating and managing dinner calendars and schedules
+- **Login Flow** (`/login`) - Google authentication with automatic role-based redirects to appropriate pages
 
 ### 📊 Data Management
 
@@ -49,6 +51,8 @@ The core application is **fully operational** with the following completed featu
 
 ### 🎨 User Experience
 
+- **Modern navigation system** - responsive header with role-based menus and mobile hamburger navigation
+- **Automatic route protection** - seamless auth flow with appropriate redirects based on user role
 - **Intuitive calendar interface** - familiar month-view layout for easy navigation
 - **Color-coded availability** - visual indicators for available, taken, and user's own signups
 - **One-click signup** - simple interaction model for dinner slot booking
@@ -56,6 +60,7 @@ The core application is **fully operational** with the following completed featu
 - **Tailwind CSS v4** for modern styling and responsive layouts
 - **Loading states and error handling** throughout the application
 - **Search and filter functionality** for missionary selection and management
+- **Clear user authentication status** - visible sign-in/sign-out states with user profile information
 
 ## 🛠 Tech Stack
 
@@ -224,13 +229,25 @@ The core application is **fully operational** with the following completed featu
 ```
 fed/
 ├── app/                          # Next.js App Router
-│   ├── (auth)/                   # Authentication route group
+│   ├── (auth)/                   # Public authentication routes
 │   │   └── login/                # Google OAuth login page
-│   ├── admin/                    # Admin dashboard and tools
-│   ├── calendar/                 # Member calendar and signup interface
+│   ├── (protected)/              # Protected route group (requires authentication)
+│   │   ├── layout.tsx            # Authentication protection wrapper
+│   │   ├── calendar/             # Member calendar and signup interface
+│   │   └── admin/                # Admin route group (requires admin role)
+│   │       ├── layout.tsx        # Admin role protection wrapper
+│   │       ├── page.tsx          # Admin dashboard
+│   │       ├── calendar/         # Calendar management tools
+│   │       ├── companionships/   # Companionship management
+│   │       └── missionaries/     # Missionary management
 │   ├── globals.css               # Global styles and Tailwind config
-│   └── layout.tsx               # Root layout with fonts and metadata
+│   ├── layout.tsx               # Root layout with header navigation
+│   └── page.tsx                 # Landing page
 ├── components/                   # Reusable React components
+│   ├── auth/                    # Authentication components
+│   │   └── ProtectedRoute.tsx   # Route protection components
+│   ├── layout/                  # Layout components
+│   │   └── Header.tsx           # Main navigation header
 │   └── ui/                      # shadcn/ui component library
 │       ├── button.tsx
 │       ├── card.tsx
@@ -257,7 +274,66 @@ fed/
 └── postcss.config.js         # PostCSS configuration for Tailwind v4
 ```
 
+## 🧭 Navigation & Authentication
+
+### **Modern Navigation System**
+
+The application features a responsive navigation system with:
+
+- **Desktop Header**: Logo, main navigation links, and user dropdown menu
+- **Mobile Navigation**: Hamburger menu with slide-out drawer
+- **Role-Based Access**: Navigation links appear based on user permissions
+- **Authentication Status**: Clear indication of signed-in/signed-out state
+
+### **Route Protection Architecture**
+
+Instead of manual authentication checks in every component, the app uses a modern route protection pattern:
+
+```typescript
+// Automatic protection via route groups and layouts
+app / protected / layout.tsx; // Requires authentication
+app / protected / admin / layout.tsx; // Requires admin role
+```
+
+**Benefits:**
+
+- ✅ **No manual auth checks** needed in page components
+- ✅ **Impossible to forget** protection on new pages
+- ✅ **Centralized auth logic** - easy to maintain and test
+- ✅ **Automatic redirects** based on user role and authentication status
+
+### **User Experience Flow**
+
+1. **Unauthenticated users** → Redirected to `/login`
+2. **Regular members** → Land on `/calendar` (main signup interface)
+3. **Admin users** → Land on `/admin` (dashboard and management tools)
+4. **Non-admin accessing admin pages** → Redirected to `/calendar`
+
 ## 🔒 Security & Design Decisions
+
+### Route Protection Architecture
+
+**Decision: Layout-Based Route Protection with Route Groups**
+
+**Implementation:**
+
+- **Route Groups** - `(protected)` and `(admin)` organize pages by access level
+- **Layout Components** - `ProtectedRoute` and `AdminRoute` handle auth automatically
+- **Centralized Logic** - All authentication/authorization in reusable components
+
+**Benefits:**
+
+- **No manual auth checks** - impossible to forget protection on new pages
+- **Maintainable** - auth logic changes in one place affect all routes
+- **Type-safe** - TypeScript ensures proper role-based access
+- **Performance** - layout-level protection is more efficient than per-page checks
+
+**Security Guarantees:**
+
+- All routes in `(protected)/` require authentication
+- All routes in `(protected)/admin/` require admin role
+- Automatic redirects prevent unauthorized access
+- Loading states prevent content flashing
 
 ### Authentication Strategy
 
