@@ -316,18 +316,37 @@ firebase use --add
 firebase emulators:start
 ```
 
-3. **Configure environment**
+3. **Configure environment variables**
 
-```bash
-# Copy Firebase config to your project
-# Update lib/firebase/config.ts with your project details
+For local development with emulators, update `apphosting.emulator.yaml`:
+
+```yaml
+env:
+  - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    value: "your-google-client-id"
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "your-firebase-api-key"
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "your-project.firebaseapp.com"
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "your-project-id"
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "your-project.appspot.com"
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "your-messaging-sender-id"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "your-app-id"
 ```
 
-4. **Run development server**
+Get these values from your Firebase Console → Project Settings → General → Your apps
+
+4. **Start development with emulators**
 
 ```bash
-npm run dev
+firebase emulators:start
 ```
+
+This will start both Firebase emulators AND the Next.js development server.
 
 5. **Seed test data** (optional)
 
@@ -342,6 +361,29 @@ npm run dev
 - **Firestore Database** with security rules deployed
 - **Firebase Emulator Suite** for local development
 
+**Environment Configuration:**
+
+This project uses different environment configurations for local vs production:
+
+- **Local Development**: Uses `apphosting.emulator.yaml` with hardcoded values
+- **Production**: Uses `apphosting.yaml` with Google Cloud Secret Manager
+
+**For Production Deployment:**
+
+1. Create secrets in Google Cloud Secret Manager:
+
+```bash
+firebase apphosting:secrets:set GOOGLE_CLIENT_ID
+firebase apphosting:secrets:set FIREBASE_API_KEY
+firebase apphosting:secrets:set FIREBASE_AUTH_DOMAIN
+firebase apphosting:secrets:set FIREBASE_PROJECT_ID
+firebase apphosting:secrets:set FIREBASE_STORAGE_BUCKET
+firebase apphosting:secrets:set FIREBASE_MESSAGING_SENDER_ID
+firebase apphosting:secrets:set FIREBASE_APP_ID
+```
+
+2. The `apphosting.yaml` file references these secrets securely.
+
 **Firestore Security Rules:**
 The application includes comprehensive security rules that:
 
@@ -354,15 +396,15 @@ The application includes comprehensive security rules that:
 
 ```bash
 # Development
-npm run dev          # Start development server with Turbopack
-npm run build        # Build production application
-npm run start        # Start production server
-npm run lint         # Run ESLint
+firebase emulators:start    # Start Firebase emulators + Next.js dev server
+npm run build              # Build production application
+npm run start              # Start production server
+npm run lint               # Run ESLint
 
 # Firebase
-firebase emulators:start    # Start Firebase emulators
-firebase deploy            # Deploy to Firebase Hosting
-firebase deploy --only firestore:rules  # Deploy security rules only
+firebase deploy                           # Deploy to Firebase App Hosting
+firebase deploy --only firestore:rules   # Deploy security rules only
+firebase apphosting:secrets:set SECRET_NAME  # Manage production secrets
 ```
 
 ## 🎯 Next Steps & Roadmap

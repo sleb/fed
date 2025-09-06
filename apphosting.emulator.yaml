@@ -1,5 +1,20 @@
+runConfig:
+  minInstances: 0
+
 env:
-#- variable: ENV_VAR_NAME
-#  value: plaintext value
-#- variable: SECRET_ENV_VAR_NAME
-#  secret: cloud-secret-manager-id
+  - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    value: GOOGLE_CLIENT_ID
+  - variable: NEXT_PUBLIC_API_KEY
+    value: FIREBASE_API_KEY
+  - variable: NEXT_PUBLIC_AUTH_DOMAIN
+    value: FIREBASE_AUTH_DOMAIN
+  - variable: NEXT_PUBLIC_PROJECT_ID
+    value: FIREBASE_PROJECT_ID
+  - variable: NEXT_PUBLIC_STORAGE_BUCKET
+    value: FIREBASE_STORAGE_BUCKET
+  - variable: NEXT_PUBLIC_MESSAGING_SENDER_ID
+    value: FIREBASE_MESSAGING_SENDER_ID
+  - variable: NEXT_PUBLIC_NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: FIREBASE_MEASUREMENT_ID
+  - variable: NEXT_PUBLIC_MEASUREMENT_ID
+    value: FIREBASE_MEASUREMENT_ID
