@@ -112,7 +112,10 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow">
+          <Card
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => router.push("/admin/missionaries")}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="h-5 w-5" />
@@ -123,7 +126,6 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">
                 Manage missionary information
               </p>
-              <p className="text-xs text-gray-500 mt-1">(Coming soon)</p>
             </CardContent>
           </Card>
 

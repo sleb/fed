@@ -1,16 +1,23 @@
 export interface Missionary {
   id: string;
   name: string;
-  companionName?: string;
-  area: string;
-  address: string;
-  phone?: string;
+  phone?: string; // Individual missionaries may have personal phones
   email?: string;
-  apartmentNumber?: string;
-  zone?: string;
-  district?: string;
   dinnerPreferences?: string[];
   allergies?: string[];
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Companionship {
+  id: string;
+  area: string; // Primary identifier - missionaries serving in this area
+  address: string;
+  apartmentNumber?: string;
+  phone: string; // Required shared phone number for the companionship
+  missionaryIds: string[];
   notes?: string;
   isActive: boolean;
   createdAt: Date;
@@ -23,7 +30,7 @@ export interface DinnerSlot {
   date: Date;
   dayOfWeek: string;
   time: string; // e.g., "6:00 PM"
-  status: 'available' | 'assigned' | 'completed' | 'cancelled';
+  status: "available" | "assigned" | "completed" | "cancelled";
   assignedUserId?: string;
   assignedUserName?: string;
   assignedUserEmail?: string;
@@ -48,9 +55,9 @@ export interface Signup {
   dinnerDate: Date;
   dinnerTime: string;
   guestCount: number;
-  status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
+  status: "confirmed" | "pending" | "cancelled" | "completed";
   specialRequests?: string;
-  contactPreference: 'email' | 'phone' | 'both';
+  contactPreference: "email" | "phone" | "both";
   reminderSent: boolean;
   notes?: string;
   createdAt: Date;
@@ -63,7 +70,7 @@ export interface UserProfile {
   email: string;
   phone?: string;
   address?: string;
-  role: 'member' | 'admin' | 'missionary';
+  role: "member" | "admin" | "missionary";
   preferences: {
     emailNotifications: boolean;
     smsNotifications: boolean;
@@ -84,7 +91,7 @@ export interface SignupFormData {
   guestCount: number;
   specialRequests?: string;
   userPhone?: string;
-  contactPreference: 'email' | 'phone' | 'both';
+  contactPreference: "email" | "phone" | "both";
   notes?: string;
 }
 
@@ -109,7 +116,7 @@ export interface DinnerSlotFilters {
 }
 
 export interface SignupFilters {
-  status?: Signup['status'];
+  status?: Signup["status"];
   dateFrom?: Date;
   dateTo?: Date;
   userId?: string;

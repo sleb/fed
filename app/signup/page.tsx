@@ -29,7 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/firebase/auth";
 import { DinnerSlotWithMissionary, SignupFormData } from "@/types";
-import { Calendar, Clock, MapPin, Users, Utensils } from "lucide-react";
+import { Calendar, Clock, Users, Utensils } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSignupFilters, useSignups } from "../../hooks/useSignups";
@@ -313,9 +313,8 @@ export default function SignupPage() {
                                 <h3 className="font-semibold text-lg">
                                   {slot.missionary.name}
                                 </h3>
-                                <Badge variant="outline">
-                                  {slot.missionary.area}
-                                </Badge>
+                                {/* TODO: Update to show companionship area */}
+                                <Badge variant="outline">Missionary</Badge>
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
@@ -327,10 +326,11 @@ export default function SignupPage() {
                                   <Clock className="h-4 w-4" />
                                   {slot.time}
                                 </div>
-                                <div className="flex items-center gap-1">
+                                {/* TODO: Update to show companionship address */}
+                                {/* <div className="flex items-center gap-1">
                                   <MapPin className="h-4 w-4" />
-                                  {slot.missionary.address}
-                                </div>
+                                  Address TBD
+                                </div> */}
                                 <div className="flex items-center gap-1">
                                   <Users className="h-4 w-4" />
                                   {slot.guestCount} guests

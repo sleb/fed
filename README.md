@@ -7,7 +7,9 @@ A modern web application to help local congregations coordinate and manage dinne
 This application streamlines the process of organizing meals for missionaries by providing:
 
 - **Easy signup system** for congregation members to volunteer for dinner slots
-- **Missionary profile management** with dietary restrictions and preferences
+- **Companionship-based organization** - meals are scheduled for missionary companionships (2-3 missionaries serving together in an area)
+- **Individual missionary profiles** with personal contact info, dietary restrictions and preferences
+- **Smart companionship management** with validation and status tracking
 - **Real-time availability tracking** with automatic slot assignment
 - **Role-based access control** for members and administrators
 - **Mobile-first responsive design** for accessibility on all devices
@@ -27,12 +29,16 @@ The core application is **fully operational** with the following completed featu
 
 - **Member Signup Page** (`/signup`) - Browse and sign up for dinner slots
 - **Admin Dashboard** (`/admin`) - Database management and seeding tools
+- **Companionship Management** (`/admin/missionaries`) - Manage missionary companionships with status validation
 - **Login Flow** (`/login`) - Google authentication with role-based redirects
 
 ### 📊 Data Management
 
+- **Companionship-based organization** - missionaries grouped by service area (2-3 per companionship)
+- **Individual missionary profiles** with personal contact info, dietary restrictions, and preferences
+- **Companionship validation** - visual warnings for incomplete companionships needing more members
+- **Aggregated allergy tracking** - automatically combines individual allergies for companionship dinner planning
 - **Real-time dinner slot availability** with automatic updates
-- **Missionary profiles** with dietary restrictions, allergies, and preferences
 - **Signup tracking** with contact preferences and special requests
 - **Automatic slot assignment/release** when members sign up or cancel
 
@@ -71,6 +77,8 @@ The core application is **fully operational** with the following completed featu
 
 ### Collections
 
+> **Note**: The database uses a companionship-based model where missionaries are grouped by service area (2-3 per companionship). Companionship display names are auto-generated from assigned missionaries. Each companionship has one shared phone number, while individual missionaries have their own email addresses.
+
 **users**
 
 ```typescript
@@ -95,16 +103,27 @@ The core application is **fully operational** with the following completed featu
 {
   id: string;
   name: string;
-  companionName?: string;
-  area: string;
-  address: string;
-  phone?: string;
-  email?: string;
-  apartmentNumber?: string;
-  zone?: string;
-  district?: string;
+  phone?: string; // Individual missionaries may have personal phones
+  email?: string; // Individual email addresses
   dinnerPreferences?: string[];
   allergies?: string[];
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+**companionships**
+
+```typescript
+{
+  id: string;
+  area: string; // Primary identifier - service area (display name auto-generated from assigned missionaries)
+  address: string;
+  apartmentNumber?: string;
+  phone: string; // Shared phone number for the companionship
+  missionaryIds: string[]; // Array of missionary IDs (2-3 missionaries)
   notes?: string;
   isActive: boolean;
   createdAt: Date;
@@ -117,7 +136,7 @@ The core application is **fully operational** with the following completed featu
 ```typescript
 {
   id: string;
-  missionaryId: string;
+  missionaryId: string; // References companionship ID (naming kept for compatibility)
   date: Date;
   dayOfWeek: string;
   time: string; // e.g., "6:00 PM"
@@ -127,7 +146,7 @@ The core application is **fully operational** with the following completed featu
   assignedUserEmail?: string;
   assignedUserPhone?: string;
   specialRequests?: string;
-  guestCount: number;
+  guestCount: number; // Number of missionaries in companionship (usually 2)
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -146,7 +165,7 @@ The core application is **fully operational** with the following completed featu
   userPhone?: string;
   dinnerSlotId: string;
   missionaryId: string;
-  missionaryName: string;
+  missionaryName: string; // Auto-generated companionship display name
   dinnerDate: Date;
   dinnerTime: string;
   guestCount: number;
@@ -310,22 +329,38 @@ firebase deploy --only firestore:rules  # Deploy security rules only
 
 ### Phase 2: Enhanced Features (Upcoming)
 
+- [ ] **Missionary Management Interface** - Full CRUD operations for missionary profiles
+  - Admin interface for managing missionary records
+  - Soft delete with restore functionality
+  - Area-based organization and autocomplete
+  - Mobile-friendly modal forms
+- [ ] **Companionship-Based Calendar System** - Enhanced scheduling approach
+  - **Ward-level default calendar** - Set congregation-wide dinner schedule (e.g., "Monday-Friday 6:00 PM")
+  - **Companionship = Area** - Missionaries serving in the same area form a companionship
+  - **Companionship overrides** - Customize schedules for specific companionships when needed
+  - **Member feeding history** - Track which families have fed which companionships
+  - **Automatic slot generation** - Create dinner slots based on ward calendar and active companionships
 - [ ] **Calendar integration** - Google Calendar sync for dinner schedules
 - [ ] **Email notifications** - Automated reminders and confirmations
-- [ ] **Advanced admin tools** - Bulk operations, reporting, analytics
-- [ ] **Recurring schedules** - Weekly/monthly dinner patterns
-- [ ] **Missionary management** - Full CRUD operations for missionary profiles
 - [ ] **Enhanced filtering** - Search by missionary name, dietary restrictions
 - [ ] **Mobile app** - Progressive Web App (PWA) features
 
 ### Phase 3: Advanced Features (Future)
 
+- [ ] **Advanced Admin Tools** - Bulk operations, reporting, analytics dashboard
+- [ ] **Area Admin Permissions** - Role-based access for different administrative levels
+- [ ] **CSV Import/Export** - Bulk missionary data management
+- [ ] **Missionary Photos** - Profile pictures and visual identification
+- [ ] **Auto-deletion of Inactive Missionaries** - Automatically delete inactive missionaries after 30 days
+  - Show "Will be deleted in X days" countdown badges on inactive missionaries
+  - Email warnings to admins before deletion
+  - Option to extend or restore before deletion deadline
 - [ ] **SMS notifications** via Twilio integration
 - [ ] **Multi-language support** for diverse congregations
 - [ ] **Advanced analytics** - Signup patterns, member engagement metrics
 - [ ] **Export functionality** - Google Sheets integration for scheduling data
 - [ ] **Waitlist management** - Handle oversubscribed dinner slots
-- [ ] **Recurring donations** - Track member participation over time
+- [ ] **Member participation tracking** - Analytics on dinner hosting patterns
 
 ## 🤝 Contributing
 

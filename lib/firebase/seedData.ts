@@ -1,118 +1,191 @@
-import { DinnerSlot, Missionary } from '@/types';
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
-import { db } from './config';
+import { Companionship, DinnerSlot, Missionary } from "@/types";
+import { addDoc, collection, doc, setDoc } from "firebase/firestore";
+import { db } from "./config";
 
-// Sample missionaries data
-const SAMPLE_MISSIONARIES: Omit<Missionary, 'id' | 'createdAt' | 'updatedAt'>[] = [
+// Sample individual missionaries
+const SAMPLE_MISSIONARIES: Omit<
+  Missionary,
+  "id" | "createdAt" | "updatedAt"
+>[] = [
   {
-    name: 'Elder Smith & Elder Johnson',
-    companionName: 'Elder Johnson',
-    area: 'Downtown',
-    address: '123 Main St, Apt 4B',
-    apartmentNumber: '4B',
-    phone: '(555) 123-4567',
-    email: 'smith.johnson@missionary.org',
-    zone: 'Central Zone',
-    district: 'First District',
-    dinnerPreferences: ['Italian', 'Mexican', 'Home cooking'],
-    allergies: ['Nuts', 'Shellfish'],
-    notes: 'Prefer dinner between 5-7 PM. Elder Smith is vegetarian.',
-    isActive: true
+    name: "Elder Smith",
+    phone: "(555) 123-4567",
+    email: "elder.smith@missionary.org",
+    dinnerPreferences: ["Italian", "Vegetarian"],
+    allergies: ["Nuts"],
+    notes: "Vegetarian, prefers simple meals",
+    isActive: true,
   },
   {
-    name: 'Elder Davis & Elder Wilson',
-    companionName: 'Elder Wilson',
-    area: 'Northside',
-    address: '456 Oak Avenue, Unit 12',
-    apartmentNumber: '12',
-    phone: '(555) 234-5678',
-    email: 'davis.wilson@missionary.org',
-    zone: 'North Zone',
-    district: 'Second District',
-    dinnerPreferences: ['American', 'Asian', 'Healthy options'],
+    name: "Elder Johnson",
+    phone: "(555) 123-4568",
+    email: "elder.johnson@missionary.org",
+    dinnerPreferences: ["Mexican", "Home cooking"],
+    allergies: ["Shellfish"],
+    notes: "Loves spicy food",
+    isActive: true,
+  },
+  {
+    name: "Elder Davis",
+    phone: "(555) 234-5678",
+    email: "elder.davis@missionary.org",
+    dinnerPreferences: ["American", "Asian"],
     allergies: [],
-    notes: 'Available most evenings. Love trying new cuisines!',
-    isActive: true
+    notes: "Easy going with food",
+    isActive: true,
   },
   {
-    name: 'Elder Thompson & Elder Garcia',
-    companionName: 'Elder Garcia',
-    area: 'Eastside',
-    address: '789 Pine Street, Apt 7',
-    apartmentNumber: '7',
-    phone: '(555) 345-6789',
-    email: 'thompson.garcia@missionary.org',
-    zone: 'East Zone',
-    district: 'Third District',
-    dinnerPreferences: ['Mexican', 'BBQ', 'Comfort food'],
-    allergies: ['Dairy'],
-    notes: 'Elder Garcia speaks Spanish fluently. Prefer family-style meals.',
-    isActive: true
-  },
-  {
-    name: 'Elder Brown & Elder Taylor',
-    companionName: 'Elder Taylor',
-    area: 'Westside',
-    address: '321 Elm Drive, #15',
-    apartmentNumber: '15',
-    phone: '(555) 456-7890',
-    email: 'brown.taylor@missionary.org',
-    zone: 'West Zone',
-    district: 'Fourth District',
-    dinnerPreferences: ['Pizza', 'Pasta', 'Sandwiches'],
-    allergies: ['Gluten'],
-    notes: 'Elder Taylor has celiac disease. Need gluten-free options.',
-    isActive: true
-  },
-  {
-    name: 'Elder Anderson & Elder Martinez',
-    companionName: 'Elder Martinez',
-    area: 'Southside',
-    address: '654 Maple Court, Unit 3A',
-    apartmentNumber: '3A',
-    phone: '(555) 567-8901',
-    email: 'anderson.martinez@missionary.org',
-    zone: 'South Zone',
-    district: 'Fifth District',
-    dinnerPreferences: ['Tex-Mex', 'Burgers', 'Grilled food'],
+    name: "Elder Wilson",
+    phone: "(555) 234-5679",
+    email: "elder.wilson@missionary.org",
+    dinnerPreferences: ["Healthy options", "Grilled food"],
     allergies: [],
-    notes: 'Very active and have big appetites. Love outdoor activities.',
-    isActive: true
-  }
+    notes: "Enjoys trying new cuisines",
+    isActive: true,
+  },
+  {
+    name: "Elder Thompson",
+    phone: "(555) 345-6789",
+    email: "elder.thompson@missionary.org",
+    dinnerPreferences: ["BBQ", "Comfort food"],
+    allergies: [],
+    notes: "Big appetite, loves BBQ",
+    isActive: true,
+  },
+  {
+    name: "Elder Garcia",
+    phone: "(555) 345-6790",
+    email: "elder.garcia@missionary.org",
+    dinnerPreferences: ["Mexican", "Traditional"],
+    allergies: ["Dairy"],
+    notes: "Lactose intolerant, speaks Spanish fluently",
+    isActive: true,
+  },
+  {
+    name: "Elder Brown",
+    phone: "(555) 456-7890",
+    email: "elder.brown@missionary.org",
+    dinnerPreferences: ["Pizza", "Sandwiches"],
+    allergies: [],
+    notes: "Simple food preferences",
+    isActive: true,
+  },
+  {
+    name: "Elder Taylor",
+    phone: "(555) 456-7891",
+    email: "elder.taylor@missionary.org",
+    dinnerPreferences: ["Gluten-free", "Salads"],
+    allergies: ["Gluten"],
+    notes: "Has celiac disease - strict gluten-free diet required",
+    isActive: true,
+  },
+  {
+    name: "Elder Anderson",
+    phone: "(555) 567-8901",
+    email: "elder.anderson@missionary.org",
+    dinnerPreferences: ["Tex-Mex", "Burgers"],
+    allergies: [],
+    notes: "Very active, big appetite",
+    isActive: true,
+  },
+  {
+    name: "Elder Martinez",
+    phone: "(555) 567-8902",
+    email: "elder.martinez@missionary.org",
+    dinnerPreferences: ["Grilled food", "Traditional"],
+    allergies: [],
+    notes: "Loves outdoor activities and hearty meals",
+    isActive: true,
+  },
+];
+
+// Sample companionships (will be linked to missionaries after creation)
+const SAMPLE_COMPANIONSHIPS = [
+  {
+    area: "Downtown",
+    address: "123 Main St, Apt 4B",
+    apartmentNumber: "4B",
+    phone: "(555) 123-4567",
+    notes: "Prefer dinner between 5-7 PM. Good with most families.",
+    missionaryNames: ["Elder Smith", "Elder Johnson"],
+  },
+  {
+    area: "Northside",
+    address: "456 Oak Avenue, Unit 12",
+    apartmentNumber: "12",
+    phone: "(555) 234-5678",
+    notes: "Available most evenings. Love trying new cuisines!",
+    missionaryNames: ["Elder Davis", "Elder Wilson"],
+  },
+  {
+    area: "Eastside",
+    address: "789 Pine Street, Apt 7",
+    apartmentNumber: "7",
+    phone: "(555) 345-6789",
+    notes: "Elder Garcia speaks Spanish fluently. Prefer family-style meals.",
+    missionaryNames: ["Elder Thompson", "Elder Garcia"],
+  },
+  {
+    area: "Westside",
+    address: "321 Elm Drive, #15",
+    apartmentNumber: "15",
+    phone: "(555) 456-7890",
+    notes: "Elder Taylor has celiac disease. Need gluten-free options.",
+    missionaryNames: ["Elder Brown", "Elder Taylor"],
+  },
+  {
+    area: "Southside",
+    address: "654 Maple Court, Unit 3A",
+    apartmentNumber: "3A",
+    phone: "(555) 567-8901",
+    notes: "Very active and have big appetites. Love outdoor activities.",
+    missionaryNames: ["Elder Anderson", "Elder Martinez"],
+  },
 ];
 
 // Generate dinner slots for the next 4 weeks
-const generateDinnerSlots = (missionaries: string[]): Omit<DinnerSlot, 'id' | 'createdAt' | 'updatedAt'>[] => {
-  const slots: Omit<DinnerSlot, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+const generateDinnerSlots = (
+  companionshipIds: string[],
+): Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] => {
+  const slots: Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] = [];
   const today = new Date();
-  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const timeSlots = ['5:00 PM', '5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM'];
+  const daysOfWeek = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const timeSlots = ["5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM"];
 
   // Generate slots for next 4 weeks
   for (let week = 0; week < 4; week++) {
     for (let day = 0; day < 7; day++) {
       const date = new Date(today);
-      date.setDate(today.getDate() + (week * 7) + day + 1); // Start from tomorrow
+      date.setDate(today.getDate() + week * 7 + day + 1); // Start from tomorrow
 
       // Skip Sundays (day 0) for dinner appointments
       if (date.getDay() === 0) continue;
 
-      // Each missionary gets 2-3 dinner slots per week
-      missionaries.forEach((missionaryId, index) => {
-        // Skip some days to make it realistic
+      // Each companionship gets 2-3 dinner slots per week
+      companionshipIds.forEach((companionshipId, index) => {
+        // Skip some days to make it realistic (not every companionship every day)
         if ((day + index) % 3 === 0) return;
 
-        const timeSlot = timeSlots[Math.floor(Math.random() * timeSlots.length)];
+        const timeSlot =
+          timeSlots[Math.floor(Math.random() * timeSlots.length)];
 
         slots.push({
-          missionaryId,
+          missionaryId: companionshipId, // Note: This field represents companionshipId in our new model
           date,
           dayOfWeek: daysOfWeek[date.getDay()],
           time: timeSlot,
-          status: 'available',
-          guestCount: 2, // Usually 2 missionaries
-          notes: '',
-          createdBy: 'system-seed'
+          status: "available",
+          guestCount: 2, // Usually 2 missionaries in a companionship
+          notes: "",
+          createdBy: "system-seed",
         });
       });
     }
@@ -123,78 +196,123 @@ const generateDinnerSlots = (missionaries: string[]): Omit<DinnerSlot, 'id' | 'c
 
 export const seedDatabase = async (): Promise<void> => {
   try {
-    console.log('🌱 Starting database seeding...');
+    console.log("🌱 Starting database seeding...");
 
-    // Create missionaries first
-    console.log('📝 Creating missionaries...');
-    const missionaryIds: string[] = [];
+    // Step 1: Create individual missionaries
+    console.log("📝 Creating individual missionaries...");
+    const missionaryMap = new Map<string, string>(); // name -> id
 
     for (const missionary of SAMPLE_MISSIONARIES) {
       const missionaryData = {
         ...missionary,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
-      const docRef = await addDoc(collection(db, 'missionaries'), missionaryData);
-      missionaryIds.push(docRef.id);
+      const docRef = await addDoc(
+        collection(db, "missionaries"),
+        missionaryData,
+      );
+      missionaryMap.set(missionary.name, docRef.id);
       console.log(`✅ Created missionary: ${missionary.name} (${docRef.id})`);
     }
 
-    // Generate and create dinner slots
-    console.log('📅 Creating dinner slots...');
-    const dinnerSlots = generateDinnerSlots(missionaryIds);
+    // Step 2: Create companionships and link missionaries
+    console.log("🤝 Creating companionships...");
+    const companionshipIds: string[] = [];
+
+    for (const companionshipTemplate of SAMPLE_COMPANIONSHIPS) {
+      // Get missionary IDs for this companionship
+      const missionaryIds = companionshipTemplate.missionaryNames
+        .map((name) => missionaryMap.get(name))
+        .filter((id): id is string => id !== undefined);
+
+      const companionshipData: Omit<
+        Companionship,
+        "id" | "createdAt" | "updatedAt"
+      > = {
+        area: companionshipTemplate.area,
+        address: companionshipTemplate.address,
+        apartmentNumber: companionshipTemplate.apartmentNumber,
+        phone: companionshipTemplate.phone,
+        notes: companionshipTemplate.notes,
+        missionaryIds,
+        isActive: true,
+      };
+
+      const docRef = await addDoc(collection(db, "companionships"), {
+        ...companionshipData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      companionshipIds.push(docRef.id);
+      console.log(
+        `✅ Created companionship: ${companionshipTemplate.area} Area (${docRef.id}) with ${missionaryIds.length} missionaries`,
+      );
+    }
+
+    // Step 3: Generate and create dinner slots
+    console.log("📅 Creating dinner slots...");
+    const dinnerSlots = generateDinnerSlots(companionshipIds);
 
     for (const slot of dinnerSlots) {
       const slotData = {
         ...slot,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
-      await addDoc(collection(db, 'dinnerSlots'), slotData);
+      await addDoc(collection(db, "dinnerSlots"), slotData);
     }
 
     console.log(`✅ Created ${dinnerSlots.length} dinner slots`);
 
-    // Create a sample admin user (you'll need to update this with a real user ID)
-    console.log('👤 Creating sample admin user...');
-    const adminUserId = 'REPLACE_WITH_YOUR_USER_ID'; // You'll need to replace this
+    // Step 4: Create a sample admin user (optional)
+    console.log("👤 Creating sample admin user...");
+    const adminUserId = "REPLACE_WITH_YOUR_USER_ID"; // You'll need to replace this
     const adminUserData = {
       id: adminUserId,
-      name: 'Administrator',
-      email: 'admin@example.com',
-      role: 'admin',
+      name: "Administrator",
+      email: "admin@example.com",
+      role: "admin",
       createdAt: new Date(),
       lastLoginAt: new Date(),
       preferences: {
         emailNotifications: true,
-        smsNotifications: true
-      }
+        smsNotifications: true,
+        reminderDaysBefore: 1,
+      },
     };
 
     // Only create if you provide a real user ID
-    if (adminUserId !== 'REPLACE_WITH_YOUR_USER_ID') {
-      await setDoc(doc(db, 'users', adminUserId), adminUserData);
-      console.log('✅ Created admin user');
+    if (adminUserId !== "REPLACE_WITH_YOUR_USER_ID") {
+      await setDoc(doc(db, "users", adminUserId), adminUserData);
+      console.log("✅ Created admin user");
     } else {
-      console.log('⚠️  Skipped admin user creation - update adminUserId in seedData.ts');
+      console.log(
+        "⚠️  Skipped admin user creation - update adminUserId in seedData.ts",
+      );
     }
 
-    console.log('🎉 Database seeding completed successfully!');
+    console.log("🎉 Database seeding completed successfully!");
     console.log(`📊 Summary:`);
-    console.log(`   - ${SAMPLE_MISSIONARIES.length} missionaries created`);
+    console.log(
+      `   - ${SAMPLE_MISSIONARIES.length} individual missionaries created`,
+    );
+    console.log(`   - ${SAMPLE_COMPANIONSHIPS.length} companionships created`);
     console.log(`   - ${dinnerSlots.length} dinner slots created`);
     console.log(`   - Ready for signups!`);
-
   } catch (error) {
-    console.error('❌ Error seeding database:', error);
+    console.error("❌ Error seeding database:", error);
     throw error;
   }
 };
 
 export const clearTestData = async (): Promise<void> => {
-  console.log('🧹 Note: Manual cleanup required');
-  console.log('Please use Firebase Console or Admin SDK to clear test data');
-  console.log('Collections to clear: missionaries, dinnerSlots, signups');
+  console.log("🧹 Note: Manual cleanup required");
+  console.log("Please use Firebase Console or Admin SDK to clear test data");
+  console.log(
+    "Collections to clear: missionaries, companionships, dinnerSlots, signups",
+  );
 };

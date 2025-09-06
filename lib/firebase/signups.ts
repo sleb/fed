@@ -148,31 +148,32 @@ export const getAvailableDinnerSlots = async (
       }));
 
     // Apply additional filters that require missionary data
-    let filteredSlots = slotsWithMissionaries;
+    const filteredSlots = slotsWithMissionaries;
 
-    if (filters.area) {
-      filteredSlots = filteredSlots.filter((slot) =>
-        slot.missionary.area
-          .toLowerCase()
-          .includes(filters.area!.toLowerCase()),
-      );
-    }
+    // TODO: Update these filters to work with companionship-based model
+    // if (filters.area) {
+    //   filteredSlots = filteredSlots.filter((slot) =>
+    //     slot.missionary.area
+    //       .toLowerCase()
+    //       .includes(filters.area!.toLowerCase()),
+    //   );
+    // }
 
-    if (filters.zone) {
-      filteredSlots = filteredSlots.filter((slot) =>
-        slot.missionary.zone
-          ?.toLowerCase()
-          .includes(filters.zone!.toLowerCase()),
-      );
-    }
+    // if (filters.zone) {
+    //   filteredSlots = filteredSlots.filter((slot) =>
+    //     slot.missionary.zone
+    //       ?.toLowerCase()
+    //       .includes(filters.zone!.toLowerCase()),
+    //   );
+    // }
 
-    if (filters.district) {
-      filteredSlots = filteredSlots.filter((slot) =>
-        slot.missionary.district
-          ?.toLowerCase()
-          .includes(filters.district!.toLowerCase()),
-      );
-    }
+    // if (filters.district) {
+    //   filteredSlots = filteredSlots.filter((slot) =>
+    //     slot.missionary.district
+    //       ?.toLowerCase()
+    //       .includes(filters.district!.toLowerCase()),
+    //   );
+    // }
 
     return filteredSlots;
   } catch (error) {
