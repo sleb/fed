@@ -318,27 +318,25 @@ firebase emulators:start
 
 3. **Configure environment variables**
 
-For local development with emulators, update `apphosting.emulator.yaml`:
+For local development with emulators, create a single dummy secret:
 
-```yaml
-env:
-  - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    value: "your-google-client-id"
-  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "your-firebase-api-key"
-  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: "your-project.firebaseapp.com"
-  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: "your-project-id"
-  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: "your-project.appspot.com"
-  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "your-messaging-sender-id"
-  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: "your-app-id"
+1. **Get your Firebase configuration** from Firebase Console → Project Settings → General → Your apps
+
+2. **Create the dummy secret** for development:
+
+```bash
+firebase apphosting:secrets:set APPHOSTING_DUMMY_SECRET
 ```
 
-Get these values from your Firebase Console → Project Settings → General → Your apps
+When prompted, enter any placeholder value (e.g., "dummy-dev-config"). The actual Firebase configuration values don't matter for local development since the emulators will handle authentication and database operations.
+
+3. **Grant access to the secret**:
+
+```bash
+firebase apphosting:secrets:grantaccess APPHOSTING_DUMMY_SECRET
+```
+
+The `apphosting.emulator.yaml` is configured to use this single dummy secret for all environment variables. This approach keeps the development setup simple while maintaining the same structure as production.
 
 4. **Start development with emulators**
 
@@ -365,12 +363,12 @@ This will start both Firebase emulators AND the Next.js development server.
 
 This project uses different environment configurations for local vs production:
 
-- **Local Development**: Uses `apphosting.emulator.yaml` with hardcoded values
-- **Production**: Uses `apphosting.yaml` with Google Cloud Secret Manager
+- **Local Development**: Uses `apphosting.emulator.yaml` with a single `APPHOSTING_DUMMY_SECRET` for all environment variables (actual values don't matter since emulators handle everything)
+- **Production**: Uses `apphosting.yaml` with individual Google Cloud Secret Manager secrets for each Firebase configuration value
 
 **For Production Deployment:**
 
-1. Create secrets in Google Cloud Secret Manager:
+Create individual secrets for each Firebase configuration value:
 
 ```bash
 firebase apphosting:secrets:set GOOGLE_CLIENT_ID
@@ -382,7 +380,7 @@ firebase apphosting:secrets:set FIREBASE_MESSAGING_SENDER_ID
 firebase apphosting:secrets:set FIREBASE_APP_ID
 ```
 
-2. The `apphosting.yaml` file references these secrets securely.
+Each secret should contain only the corresponding value (not JSON). The `apphosting.yaml` file references these individual secrets for production security.
 
 **Firestore Security Rules:**
 The application includes comprehensive security rules that:
