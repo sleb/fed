@@ -36,8 +36,6 @@ import {
   ArrowLeft,
   Edit,
   Mail,
-  MapPin,
-  Phone,
   Plus,
   Search,
   Trash2,
@@ -47,69 +45,32 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Helper function to generate companionship display name from missionaries
-const generateCompanionshipName = (
-  missionaries: Missionary[],
-  companionship: Companionship,
-): string => {
-  const companionshipMissionaries = missionaries.filter(
-    (m) => companionship.missionaryIds.includes(m.id) && m.isActive,
-  );
-
-  if (companionshipMissionaries.length === 0) {
-    return "No Active Missionaries";
-  }
-
-  if (companionshipMissionaries.length === 1) {
-    return companionshipMissionaries[0].name;
-  }
-
-  // For 2+ missionaries, join names with &
-  const names = companionshipMissionaries.map((m) => m.name).sort();
-  return names.join(" & ");
-};
-
-export default function CompanionshipsPage() {
+export default function MissionariesPage() {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
-  const [companionships, setCompanionships] = useState<Companionship[]>([]);
-  const [filteredCompanionships, setFilteredCompanionships] = useState<
-    Companionship[]
-  >([]);
   const [missionaries, setMissionaries] = useState<Missionary[]>([]);
+  const [filteredMissionaries, setFilteredMissionaries] = useState<
+    Missionary[]
+  >([]);
+  const [companionships, setCompanionships] = useState<Companionship[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "inactive" | "incomplete"
+    "all" | "active" | "inactive" | "assigned" | "unassigned"
   >("active");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingCompanionship, setEditingCompanionship] =
-    useState<Companionship | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showMissionaryModal, setShowMissionaryModal] = useState(false);
   const [editingMissionary, setEditingMissionary] = useState<Missionary | null>(
     null,
   );
   const [savingMissionary, setSavingMissionary] = useState(false);
-  const [missionarySearchTerm, setMissionarySearchTerm] = useState("");
-
-  // Form state for companionship
-  const [formData, setFormData] = useState({
-    area: "",
-    address: "",
-    apartmentNumber: "",
-    phone: "",
-    notes: "",
-    missionaryIds: [] as string[],
-  });
+  const [error, setError] = useState<string | null>(null);
 
   // Form state for missionary
   const [missionaryFormData, setMissionaryFormData] = useState({
     name: "",
     email: "",
-    dinnerPreferences: [] as string[],
-    allergies: [] as string[],
+    dinnerPreferences: [""],
+    allergies: [""],
     notes: "",
   });
 
@@ -131,172 +92,69 @@ export default function CompanionshipsPage() {
     }
   }, [isAdmin]);
 
-  // Filter companionships
+  // Filter missionaries
   useEffect(() => {
-    let filtered = companionships;
+    let filtered = missionaries;
 
     // Filter by status
     if (filterStatus === "active") {
-      filtered = filtered.filter((c) => c.isActive);
+      filtered = filtered.filter((m) => m.isActive);
     } else if (filterStatus === "inactive") {
-      filtered = filtered.filter((c) => !c.isActive);
-    } else if (filterStatus === "incomplete") {
-      filtered = filtered.filter((c) => {
-        const activeMissionaries = c.missionaryIds.filter((id) =>
-          missionaries.find((m) => m.id === id && m.isActive),
-        );
-        return activeMissionaries.length < 2;
-      });
+      filtered = filtered.filter((m) => !m.isActive);
+    } else if (filterStatus === "assigned") {
+      const assignedIds = new Set(
+        companionships
+          .filter((c) => c.isActive)
+          .flatMap((c) => c.missionaryIds),
+      );
+      filtered = filtered.filter((m) => m.isActive && assignedIds.has(m.id));
+    } else if (filterStatus === "unassigned") {
+      const assignedIds = new Set(
+        companionships
+          .filter((c) => c.isActive)
+          .flatMap((c) => c.missionaryIds),
+      );
+      filtered = filtered.filter((m) => m.isActive && !assignedIds.has(m.id));
     }
 
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter((c) => {
-        const displayName = generateCompanionshipName(
-          missionaries,
-          c,
-        ).toLowerCase();
-        return (
-          displayName.includes(term) || c.area.toLowerCase().includes(term)
-        );
-      });
+      filtered = filtered.filter(
+        (m) =>
+          m.name.toLowerCase().includes(term) ||
+          (m.email && m.email.toLowerCase().includes(term)) ||
+          (m.allergies &&
+            m.allergies.some((a) => a.toLowerCase().includes(term))) ||
+          (m.dinnerPreferences &&
+            m.dinnerPreferences.some((p) => p.toLowerCase().includes(term))),
+      );
     }
 
-    setFilteredCompanionships(filtered);
-  }, [companionships, missionaries, searchTerm, filterStatus]);
+    setFilteredMissionaries(filtered);
+  }, [missionaries, companionships, searchTerm, filterStatus]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [companionshipData, missionaryData] = await Promise.all([
-        CompanionshipService.getAllCompanionships(),
+      const [missionaryData, companionshipData] = await Promise.all([
         MissionaryService.getAllMissionaries(),
+        CompanionshipService.getAllCompanionships(),
       ]);
-      setCompanionships(companionshipData);
       setMissionaries(missionaryData);
+      setCompanionships(companionshipData);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Failed to load companionships and missionaries");
+      setError("Failed to load missionaries and companionships");
     } finally {
       setLoading(false);
     }
   };
 
-  const getCompanionshipMissionaries = (companionship: Companionship) => {
-    return missionaries.filter(
-      (m) => companionship.missionaryIds.includes(m.id) && m.isActive,
+  const getMissionaryCompanionship = (missionary: Missionary) => {
+    return companionships.find(
+      (c) => c.isActive && c.missionaryIds.includes(missionary.id),
     );
-  };
-
-  const getCompanionshipStatus = (companionship: Companionship) => {
-    const activeMissionaries = getCompanionshipMissionaries(companionship);
-    const count = activeMissionaries.length;
-
-    if (!companionship.isActive)
-      return { status: "inactive", count, color: "secondary", showBadge: true };
-    if (count === 0)
-      return { status: "empty", count, color: "outline", showBadge: true };
-    if (count === 1)
-      return {
-        status: "incomplete",
-        count,
-        color: "destructive",
-        showBadge: true,
-      };
-    if (count >= 2 && count <= 3)
-      return { status: "complete", count, color: "default", showBadge: false };
-    return {
-      status: "overstaffed",
-      count,
-      color: "secondary",
-      showBadge: true,
-    };
-  };
-
-  const getAggregatedAllergies = (companionship: Companionship) => {
-    const companionshipMissionaries =
-      getCompanionshipMissionaries(companionship);
-    const allAllergies = companionshipMissionaries
-      .flatMap((m) => m.allergies || [])
-      .filter(Boolean);
-    return [...new Set(allAllergies)].sort();
-  };
-
-  const resetForm = () => {
-    setFormData({
-      area: "",
-      address: "",
-      apartmentNumber: "",
-      phone: "",
-      notes: "",
-      missionaryIds: [],
-    });
-    setEditingCompanionship(null);
-    setError(null);
-  };
-
-  const openAddModal = () => {
-    resetForm();
-    setShowAddModal(true);
-  };
-
-  const openEditModal = (companionship: Companionship) => {
-    setFormData({
-      area: companionship.area,
-      address: companionship.address,
-      apartmentNumber: companionship.apartmentNumber || "",
-      phone: companionship.phone || "",
-      notes: companionship.notes || "",
-      missionaryIds: companionship.missionaryIds,
-    });
-    setEditingCompanionship(companionship);
-    setShowAddModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    try {
-      const companionshipData = {
-        ...formData,
-        isActive: true,
-      };
-
-      if (editingCompanionship) {
-        await CompanionshipService.updateCompanionship(
-          editingCompanionship.id,
-          companionshipData,
-        );
-      } else {
-        await CompanionshipService.createCompanionship(companionshipData);
-      }
-
-      setShowAddModal(false);
-      resetForm();
-      await loadData();
-    } catch (err) {
-      console.error("Error saving companionship:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to save companionship",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleCompanionshipStatus = async (companionship: Companionship) => {
-    try {
-      await CompanionshipService.updateCompanionship(companionship.id, {
-        isActive: !companionship.isActive,
-      });
-      await loadData();
-    } catch (err) {
-      console.error("Error updating companionship status:", err);
-      setError("Failed to update companionship status");
-    }
   };
 
   const resetMissionaryForm = () => {
@@ -309,6 +167,29 @@ export default function CompanionshipsPage() {
     });
     setEditingMissionary(null);
     setError(null);
+  };
+
+  const openAddModal = () => {
+    resetMissionaryForm();
+    setShowMissionaryModal(true);
+  };
+
+  const openEditModal = (missionary: Missionary) => {
+    setMissionaryFormData({
+      name: missionary.name,
+      email: missionary.email || "",
+      dinnerPreferences:
+        missionary.dinnerPreferences && missionary.dinnerPreferences.length > 0
+          ? missionary.dinnerPreferences
+          : [""],
+      allergies:
+        missionary.allergies && missionary.allergies.length > 0
+          ? missionary.allergies
+          : [""],
+      notes: missionary.notes || "",
+    });
+    setEditingMissionary(missionary);
+    setShowMissionaryModal(true);
   };
 
   const handleMissionarySubmit = async (e: React.FormEvent) => {
@@ -333,16 +214,7 @@ export default function CompanionshipsPage() {
           missionaryData,
         );
       } else {
-        const newMissionaryId =
-          await MissionaryService.createMissionary(missionaryData);
-
-        // Add to current companionship form if modal is open
-        if (showAddModal || editingCompanionship) {
-          setFormData((prev) => ({
-            ...prev,
-            missionaryIds: [...prev.missionaryIds, newMissionaryId],
-          }));
-        }
+        await MissionaryService.createMissionary(missionaryData);
       }
 
       setShowMissionaryModal(false);
@@ -360,70 +232,24 @@ export default function CompanionshipsPage() {
     }
   };
 
-  const removeMissionaryFromCompanionship = (missionaryId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      missionaryIds: prev.missionaryIds.filter((id) => id !== missionaryId),
-    }));
-  };
-
-  const addMissionaryToCompanionship = (missionaryId: string) => {
-    if (!formData.missionaryIds.includes(missionaryId)) {
-      setFormData((prev) => ({
-        ...prev,
-        missionaryIds: [...prev.missionaryIds, missionaryId],
-      }));
+  const toggleMissionaryStatus = async (missionary: Missionary) => {
+    try {
+      await MissionaryService.updateMissionary(missionary.id, {
+        isActive: !missionary.isActive,
+      });
+      await loadData();
+    } catch (err) {
+      console.error("Error updating missionary status:", err);
+      setError("Failed to update missionary status");
     }
   };
-
-  const getUnassignedMissionaries = () => {
-    const assignedIds = new Set(
-      companionships.filter((c) => c.isActive).flatMap((c) => c.missionaryIds),
-    );
-    let filtered = missionaries.filter(
-      (m) => m.isActive && !assignedIds.has(m.id),
-    );
-
-    // Filter by search term
-    if (missionarySearchTerm) {
-      const term = missionarySearchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (m) =>
-          m.name.toLowerCase().includes(term) ||
-          (m.email && m.email.toLowerCase().includes(term)),
-      );
-    }
-
-    return filtered;
-  };
-
-  const openEditMissionaryModal = (missionary: Missionary) => {
-    setMissionaryFormData({
-      name: missionary.name,
-      email: missionary.email || "",
-      dinnerPreferences:
-        missionary.dinnerPreferences && missionary.dinnerPreferences.length > 0
-          ? missionary.dinnerPreferences
-          : [""],
-      allergies:
-        missionary.allergies && missionary.allergies.length > 0
-          ? missionary.allergies
-          : [""],
-      notes: missionary.notes || "",
-    });
-    setEditingMissionary(missionary);
-    setShowMissionaryModal(true);
-  };
-
-  // Get unique areas for autocomplete
-  const existingAreas = [...new Set(companionships.map((c) => c.area))].sort();
 
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading companionships...</p>
+          <p className="text-muted-foreground">Loading missionaries...</p>
         </div>
       </div>
     );
@@ -442,260 +268,266 @@ export default function CompanionshipsPage() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => router.push("/admin")}
+                size="sm"
+                onClick={() => router.back()}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Admin
+                Back
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="h-8 w-8" />
-                  Companionship Management
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Missionary Management
                 </h1>
-                <p className="text-gray-600 mt-1">
-                  Manage missionary companionships organized by service area
+                <p className="text-sm text-muted-foreground">
+                  Create and manage individual missionary records
                 </p>
               </div>
             </div>
             <Button onClick={openAddModal} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Companionship
+              <UserPlus className="h-4 w-4" />
+              Add Missionary
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters and Search */}
-        <Card className="mb-6">
-          <CardHeader className="pb-4">
-            <CardTitle>Search & Filter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by missionary names or area..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select
-                value={filterStatus}
-                onValueChange={(
-                  value: "all" | "active" | "inactive" | "incomplete",
-                ) => setFilterStatus(value)}
-              >
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="incomplete">Incomplete</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Filters and Search */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white rounded-lg border p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search missionaries by name, email, allergies, or preferences..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Status Filter */}
+            <Select
+              value={filterStatus}
+              onValueChange={(
+                value:
+                  | "all"
+                  | "active"
+                  | "inactive"
+                  | "assigned"
+                  | "unassigned",
+              ) => setFilterStatus(value)}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Missionaries</SelectItem>
+                <SelectItem value="active">Active Only</SelectItem>
+                <SelectItem value="inactive">Inactive Only</SelectItem>
+                <SelectItem value="assigned">
+                  Assigned to Companionships
+                </SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         {/* Error Display */}
         {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <p className="text-red-700">{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setError(null)}
-                className="mt-2"
-              >
-                Dismiss
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
         )}
 
-        {/* Companionships Grid */}
-        {filteredCompanionships.length === 0 ? (
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
-            <CardContent className="py-12 text-center">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchTerm || filterStatus !== "all"
-                  ? "No companionships found"
-                  : "No companionships yet"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filterStatus !== "all"
-                  ? "Try adjusting your search or filters"
-                  : "Get started by adding your first companionship"}
-              </p>
-              {!searchTerm && filterStatus === "active" && (
-                <Button onClick={openAddModal}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add First Companionship
-                </Button>
-              )}
-            </CardContent>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Total Missionaries
+              </CardTitle>
+              <div className="text-2xl font-bold">{missionaries.length}</div>
+            </CardHeader>
           </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Active</CardTitle>
+              <div className="text-2xl font-bold text-green-600">
+                {missionaries.filter((m) => m.isActive).length}
+              </div>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Assigned</CardTitle>
+              <div className="text-2xl font-bold text-blue-600">
+                {(() => {
+                  const assignedIds = new Set(
+                    companionships
+                      .filter((c) => c.isActive)
+                      .flatMap((c) => c.missionaryIds),
+                  );
+                  return missionaries.filter(
+                    (m) => m.isActive && assignedIds.has(m.id),
+                  ).length;
+                })()}
+              </div>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Unassigned</CardTitle>
+              <div className="text-2xl font-bold text-orange-600">
+                {(() => {
+                  const assignedIds = new Set(
+                    companionships
+                      .filter((c) => c.isActive)
+                      .flatMap((c) => c.missionaryIds),
+                  );
+                  return missionaries.filter(
+                    (m) => m.isActive && !assignedIds.has(m.id),
+                  ).length;
+                })()}
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* Missionaries Grid */}
+        {filteredMissionaries.length === 0 ? (
+          <div className="bg-white rounded-lg border p-8 text-center">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No missionaries found
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || filterStatus !== "all"
+                ? "Try adjusting your search or filters."
+                : "Get started by creating your first missionary."}
+            </p>
+            {!searchTerm && filterStatus === "all" && (
+              <Button onClick={openAddModal}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Missionary
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCompanionships.map((companionship) => {
-              const status = getCompanionshipStatus(companionship);
-              const companionshipMissionaries =
-                getCompanionshipMissionaries(companionship);
-              const allergies = getAggregatedAllergies(companionship);
-
+            {filteredMissionaries.map((missionary) => {
+              const companionship = getMissionaryCompanionship(missionary);
               return (
                 <Card
-                  key={companionship.id}
+                  key={missionary.id}
                   className={`hover:shadow-md transition-shadow ${
-                    status.status === "incomplete"
-                      ? "border-red-200 bg-red-50"
-                      : ""
+                    !missionary.isActive ? "opacity-60" : ""
                   }`}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader>
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <CardTitle className="text-lg">
-                          {generateCompanionshipName(
-                            missionaries,
-                            companionship,
-                          )}
+                          {missionary.name}
                         </CardTitle>
-                        <CardDescription className="font-medium flex items-center gap-1 mt-1">
-                          <MapPin className="h-3 w-3" />
-                          {companionship.area} Area
-                        </CardDescription>
+                        {missionary.email && (
+                          <CardDescription className="flex items-center gap-1 mt-1">
+                            <Mail className="h-3 w-3" />
+                            {missionary.email}
+                          </CardDescription>
+                        )}
+                        {companionship && (
+                          <CardDescription className="flex items-center gap-1 mt-1">
+                            <Users className="h-3 w-3" />
+                            {companionship.area} Area
+                          </CardDescription>
+                        )}
                       </div>
-                      {status.showBadge && (
-                        <Badge
-                          variant={
-                            status.color as
-                              | "default"
-                              | "secondary"
-                              | "destructive"
-                              | "outline"
-                          }
-                        >
-                          {status.count} Member{status.count !== 1 ? "s" : ""}
-                          {status.status === "incomplete" && " - Need More"}
-                          {status.status === "overstaffed" && " - Too Many"}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col gap-2">
+                        {!missionary.isActive && (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
+                        {missionary.isActive && !companionship && (
+                          <Badge variant="outline">Unassigned</Badge>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {/* Missionaries List */}
-                    {companionshipMissionaries.length > 0 && (
+                    {/* Allergies */}
+                    {missionary.allergies &&
+                      missionary.allergies.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Allergies:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {missionary.allergies.map((allergy, index) => (
+                              <Badge
+                                key={index}
+                                variant="destructive"
+                                className="text-xs"
+                              >
+                                {allergy}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Dinner Preferences */}
+                    {missionary.dinnerPreferences &&
+                      missionary.dinnerPreferences.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Preferences:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {missionary.dinnerPreferences.map((pref, index) => (
+                              <Badge
+                                key={index}
+                                variant="default"
+                                className="text-xs"
+                              >
+                                {pref}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Notes */}
+                    {missionary.notes && (
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">
-                          Missionaries:
+                          Notes:
                         </p>
-                        <div className="space-y-1">
-                          {companionshipMissionaries.map((missionary) => (
-                            <p
-                              key={missionary.id}
-                              className="text-sm font-medium"
-                            >
-                              {missionary.name}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Contact Info */}
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        Contact Info:
-                      </p>
-
-                      {/* Shared Phone */}
-                      {companionship.phone && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-4 w-4" />
-                          <span className="font-medium">
-                            {companionship.phone}
-                          </span>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded">
-                            Shared
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Individual Emails */}
-                      {companionshipMissionaries.length > 0 && (
-                        <div className="space-y-1">
-                          {companionshipMissionaries.map(
-                            (missionary) =>
-                              missionary.email && (
-                                <div
-                                  key={missionary.id}
-                                  className="flex items-center gap-2 text-sm text-muted-foreground"
-                                >
-                                  <Mail className="h-3 w-3" />
-                                  <span className="text-xs">
-                                    {missionary.name}:
-                                  </span>
-                                  <span className="truncate text-xs">
-                                    {missionary.email}
-                                  </span>
-                                </div>
-                              ),
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Allergies */}
-                    {allergies.length > 0 && (
-                      <div className="pt-2">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          Companionship Allergies:
-                        </p>
-                        <p className="text-sm font-medium text-red-600">
-                          {allergies.join(", ")}
+                        <p className="text-sm text-gray-700">
+                          {missionary.notes}
                         </p>
                       </div>
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-3">
+                    <div className="flex gap-2 pt-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openEditModal(companionship)}
+                        onClick={() => openEditModal(missionary)}
                         className="flex-1"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
                       <Button
-                        variant={companionship.isActive ? "outline" : "default"}
+                        variant={missionary.isActive ? "secondary" : "default"}
                         size="sm"
-                        onClick={() => toggleCompanionshipStatus(companionship)}
+                        onClick={() => toggleMissionaryStatus(missionary)}
                         className="flex-1"
                       >
-                        {companionship.isActive ? (
-                          <>
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Restore
-                          </>
-                        )}
+                        {missionary.isActive ? "Deactivate" : "Activate"}
                       </Button>
                     </div>
                   </CardContent>
@@ -706,297 +538,9 @@ export default function CompanionshipsPage() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCompanionship
-                ? "Edit Companionship"
-                : "Add New Companionship"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCompanionship
-                ? "Update companionship area and contact information"
-                : "Create a new companionship for a service area"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Basic Information</h3>
-              <p className="text-sm text-muted-foreground">
-                Companionship name will be auto-generated from assigned
-                missionaries
-              </p>
-
-              <div>
-                <Label htmlFor="area">Area *</Label>
-                <Input
-                  id="area"
-                  value={formData.area}
-                  onChange={(e) =>
-                    setFormData({ ...formData, area: e.target.value })
-                  }
-                  placeholder="Downtown"
-                  list="areas"
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Service area that defines the companionship
-                </p>
-                <datalist id="areas">
-                  {existingAreas.map((area) => (
-                    <option key={area} value={area} />
-                  ))}
-                </datalist>
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Address</h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="sm:col-span-3">
-                  <Label htmlFor="address">Address *</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
-                    }
-                    placeholder="123 Main Street"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="apartmentNumber">Apt #</Label>
-                  <Input
-                    id="apartmentNumber"
-                    value={formData.apartmentNumber}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        apartmentNumber: e.target.value,
-                      })
-                    }
-                    placeholder="4B"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Contact Information</h3>
-              <p className="text-sm text-muted-foreground">
-                Companionship has one shared phone. Individual missionaries have
-                their own emails.
-              </p>
-
-              <div>
-                <Label htmlFor="phone">Companionship Phone *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  placeholder="(555) 123-4567"
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Shared phone number for the entire companionship
-                </p>
-              </div>
-            </div>
-
-            {/* Missionaries Assignment */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Missionary Assignment</h3>
-              <p className="text-sm text-muted-foreground">
-                Add individual missionaries to this companionship (2-3
-                recommended). Each missionary can have their own email address.
-              </p>
-
-              {/* Current assigned missionaries */}
-              {formData.missionaryIds.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Assigned Missionaries</h4>
-                  <div className="space-y-2">
-                    {formData.missionaryIds.map((missionaryId) => {
-                      const missionary = missionaries.find(
-                        (m) => m.id === missionaryId,
-                      );
-                      if (!missionary) return null;
-                      return (
-                        <div
-                          key={missionaryId}
-                          className="flex items-center justify-between bg-white border rounded-lg p-3"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">{missionary.name}</p>
-                            {missionary.email && (
-                              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {missionary.email}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                openEditMissionaryModal(missionary)
-                              }
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                removeMissionaryFromCompanionship(missionaryId)
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Available missionaries to assign */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium">Available Missionaries</h4>
-
-                {/* Search input */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search missionaries..."
-                    value={missionarySearchTerm}
-                    onChange={(e) => setMissionarySearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {getUnassignedMissionaries().length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No unassigned missionaries available
-                    </p>
-                  ) : (
-                    getUnassignedMissionaries().map((missionary) => (
-                      <div
-                        key={missionary.id}
-                        className="flex items-center justify-between bg-gray-50 border rounded-lg p-3"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">{missionary.name}</p>
-                          {missionary.email && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {missionary.email}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditMissionaryModal(missionary)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              addMissionaryToCompanionship(missionary.id)
-                            }
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Create new missionary button */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  resetMissionaryForm();
-                  setShowMissionaryModal(true);
-                }}
-                className="w-full"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Create New Missionary
-              </Button>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <Label htmlFor="notes">Additional Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                placeholder="Any additional information about this companionship..."
-                rows={3}
-              />
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowAddModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={saving} className="flex-1">
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </>
-                ) : editingCompanionship ? (
-                  "Update Companionship"
-                ) : (
-                  "Create Companionship"
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Missionary Creation Modal */}
+      {/* Missionary Creation/Edit Modal */}
       <Dialog open={showMissionaryModal} onOpenChange={setShowMissionaryModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingMissionary ? "Edit Missionary" : "Create New Missionary"}

@@ -29,7 +29,8 @@ The core application is **fully operational** with the following completed featu
 
 - **Member Signup Page** (`/signup`) - Browse and sign up for dinner slots
 - **Admin Dashboard** (`/admin`) - Database management and seeding tools
-- **Companionship Management** (`/admin/missionaries`) - Manage missionary companionships with status validation
+- **Missionary Management** (`/admin/missionaries`) - Create and manage individual missionary records
+- **Companionship Management** (`/admin/companionships`) - Manage missionary companionships with status validation
 - **Login Flow** (`/login`) - Google authentication with role-based redirects
 
 ### 📊 Data Management
@@ -332,12 +333,22 @@ firebase deploy --only firestore:rules  # Deploy security rules only
 ### Phase 2: Enhanced Features (Completed ✅)
 
 - [x] **Missionary Management Interface** - Full CRUD operations for missionary profiles
+  - ✅ Dedicated `/admin/missionaries` page for individual missionary management
   - ✅ Admin interface for creating and editing missionary records
-  - ✅ Smart missionary-companionship assignment with visual interface
-  - ✅ Real-time filtering of available/assigned missionaries
-  - ✅ Search functionality for missionary selection
-  - ✅ Individual missionary contact info and dietary preference management
+  - ✅ Smart filtering (active/inactive/assigned/unassigned missionaries)
+  - ✅ Advanced search by name, email, allergies, and preferences
+  - ✅ Individual allergy and preference management with add/remove interface
+  - ✅ Assignment status tracking and companionship association display
   - ✅ Mobile-friendly modal forms with comprehensive validation
+  - ✅ Statistics dashboard showing missionary distribution
+
+- [x] **Companionship Management Interface** - Advanced companionship operations
+  - ✅ Dedicated `/admin/companionships` page focused on companionship coordination
+  - ✅ Smart missionary-companionship assignment with visual interface
+  - ✅ Real-time filtering of available/assigned missionaries within companionship forms
+  - ✅ Action-needed-only badge system (hides badges for properly functioning companionships)
+  - ✅ Simplified companionship display names (missionary names only, area shown separately)
+  - ✅ Comprehensive companionship CRUD with address, phone, and notes management
   - [ ] Soft delete with restore functionality (future enhancement)
   - [ ] Area-based organization and autocomplete (future enhancement)
 - [ ] **Companionship-Based Calendar System** - Enhanced scheduling approach
