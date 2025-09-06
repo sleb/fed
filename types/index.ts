@@ -1,7 +1,6 @@
 export interface Missionary {
   id: string;
   name: string;
-  phone?: string; // Individual missionaries may have personal phones
   email?: string;
   dinnerPreferences?: string[];
   allergies?: string[];

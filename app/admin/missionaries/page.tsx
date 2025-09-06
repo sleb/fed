@@ -57,16 +57,16 @@ const generateCompanionshipName = (
   );
 
   if (companionshipMissionaries.length === 0) {
-    return `${companionship.area} Area - No Active Missionaries`;
+    return "No Active Missionaries";
   }
 
   if (companionshipMissionaries.length === 1) {
-    return `${companionshipMissionaries[0].name} - ${companionship.area}`;
+    return companionshipMissionaries[0].name;
   }
 
   // For 2+ missionaries, join names with &
   const names = companionshipMissionaries.map((m) => m.name).sort();
-  return `${names.join(" & ")} - ${companionship.area}`;
+  return names.join(" & ");
 };
 
 export default function CompanionshipsPage() {
@@ -87,6 +87,12 @@ export default function CompanionshipsPage() {
     useState<Companionship | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMissionaryModal, setShowMissionaryModal] = useState(false);
+  const [editingMissionary, setEditingMissionary] = useState<Missionary | null>(
+    null,
+  );
+  const [savingMissionary, setSavingMissionary] = useState(false);
+  const [missionarySearchTerm, setMissionarySearchTerm] = useState("");
 
   // Form state for companionship
   const [formData, setFormData] = useState({
@@ -96,6 +102,15 @@ export default function CompanionshipsPage() {
     phone: "",
     notes: "",
     missionaryIds: [] as string[],
+  });
+
+  // Form state for missionary
+  const [missionaryFormData, setMissionaryFormData] = useState({
+    name: "",
+    email: "",
+    dinnerPreferences: [] as string[],
+    allergies: [] as string[],
+    notes: "",
   });
 
   // Redirect non-authenticated users
@@ -179,13 +194,24 @@ export default function CompanionshipsPage() {
     const count = activeMissionaries.length;
 
     if (!companionship.isActive)
-      return { status: "inactive", count, color: "secondary" };
-    if (count === 0) return { status: "empty", count, color: "outline" };
+      return { status: "inactive", count, color: "secondary", showBadge: true };
+    if (count === 0)
+      return { status: "empty", count, color: "outline", showBadge: true };
     if (count === 1)
-      return { status: "incomplete", count, color: "destructive" };
+      return {
+        status: "incomplete",
+        count,
+        color: "destructive",
+        showBadge: true,
+      };
     if (count >= 2 && count <= 3)
-      return { status: "complete", count, color: "default" };
-    return { status: "overstaffed", count, color: "secondary" };
+      return { status: "complete", count, color: "default", showBadge: false };
+    return {
+      status: "overstaffed",
+      count,
+      color: "secondary",
+      showBadge: true,
+    };
   };
 
   const getAggregatedAllergies = (companionship: Companionship) => {
@@ -271,6 +297,122 @@ export default function CompanionshipsPage() {
       console.error("Error updating companionship status:", err);
       setError("Failed to update companionship status");
     }
+  };
+
+  const resetMissionaryForm = () => {
+    setMissionaryFormData({
+      name: "",
+      email: "",
+      dinnerPreferences: [""],
+      allergies: [""],
+      notes: "",
+    });
+    setEditingMissionary(null);
+    setError(null);
+  };
+
+  const handleMissionarySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingMissionary(true);
+    setError(null);
+
+    try {
+      const missionaryData = {
+        ...missionaryFormData,
+        // Filter out empty strings from arrays
+        dinnerPreferences: missionaryFormData.dinnerPreferences.filter((p) =>
+          p.trim(),
+        ),
+        allergies: missionaryFormData.allergies.filter((a) => a.trim()),
+        isActive: true,
+      };
+
+      if (editingMissionary) {
+        await MissionaryService.updateMissionary(
+          editingMissionary.id,
+          missionaryData,
+        );
+      } else {
+        const newMissionaryId =
+          await MissionaryService.createMissionary(missionaryData);
+
+        // Add to current companionship form if modal is open
+        if (showAddModal || editingCompanionship) {
+          setFormData((prev) => ({
+            ...prev,
+            missionaryIds: [...prev.missionaryIds, newMissionaryId],
+          }));
+        }
+      }
+
+      setShowMissionaryModal(false);
+      resetMissionaryForm();
+      await loadData();
+    } catch (err) {
+      console.error("Error saving missionary:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Failed to ${editingMissionary ? "update" : "create"} missionary`,
+      );
+    } finally {
+      setSavingMissionary(false);
+    }
+  };
+
+  const removeMissionaryFromCompanionship = (missionaryId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      missionaryIds: prev.missionaryIds.filter((id) => id !== missionaryId),
+    }));
+  };
+
+  const addMissionaryToCompanionship = (missionaryId: string) => {
+    if (!formData.missionaryIds.includes(missionaryId)) {
+      setFormData((prev) => ({
+        ...prev,
+        missionaryIds: [...prev.missionaryIds, missionaryId],
+      }));
+    }
+  };
+
+  const getUnassignedMissionaries = () => {
+    const assignedIds = new Set(
+      companionships.filter((c) => c.isActive).flatMap((c) => c.missionaryIds),
+    );
+    let filtered = missionaries.filter(
+      (m) => m.isActive && !assignedIds.has(m.id),
+    );
+
+    // Filter by search term
+    if (missionarySearchTerm) {
+      const term = missionarySearchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (m) =>
+          m.name.toLowerCase().includes(term) ||
+          (m.email && m.email.toLowerCase().includes(term)),
+      );
+    }
+
+    return filtered;
+  };
+
+  const openEditMissionaryModal = (missionary: Missionary) => {
+    setMissionaryFormData({
+      name: missionary.name,
+      email: missionary.email || "",
+      dinnerPreferences:
+        missionary.dinnerPreferences && missionary.dinnerPreferences.length > 0
+          ? missionary.dinnerPreferences
+          : [""],
+      allergies:
+        missionary.allergies && missionary.allergies.length > 0
+          ? missionary.allergies
+          : [""],
+      notes: missionary.notes || "",
+    });
+    setEditingMissionary(missionary);
+    setShowMissionaryModal(true);
   };
 
   // Get unique areas for autocomplete
@@ -434,19 +576,21 @@ export default function CompanionshipsPage() {
                           {companionship.area} Area
                         </CardDescription>
                       </div>
-                      <Badge
-                        variant={
-                          status.color as
-                            | "default"
-                            | "secondary"
-                            | "destructive"
-                            | "outline"
-                        }
-                      >
-                        {status.count} Member{status.count !== 1 ? "s" : ""}
-                        {status.status === "incomplete" && " - Need More"}
-                        {status.status === "overstaffed" && " - Too Many"}
-                      </Badge>
+                      {status.showBadge && (
+                        <Badge
+                          variant={
+                            status.color as
+                              | "default"
+                              | "secondary"
+                              | "destructive"
+                              | "outline"
+                          }
+                        >
+                          {status.count} Member{status.count !== 1 ? "s" : ""}
+                          {status.status === "incomplete" && " - Need More"}
+                          {status.status === "overstaffed" && " - Too Many"}
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -679,18 +823,134 @@ export default function CompanionshipsPage() {
                 recommended). Each missionary can have their own email address.
               </p>
 
-              {/* TODO: Add missionary selection interface */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600">
-                  📝 <strong>Coming Soon:</strong> Missionary selection
-                  interface
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  For now, missionaries will need to be assigned separately.
-                  Individual missionary emails will be displayed in the
-                  companionship contact info.
-                </p>
+              {/* Current assigned missionaries */}
+              {formData.missionaryIds.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Assigned Missionaries</h4>
+                  <div className="space-y-2">
+                    {formData.missionaryIds.map((missionaryId) => {
+                      const missionary = missionaries.find(
+                        (m) => m.id === missionaryId,
+                      );
+                      if (!missionary) return null;
+                      return (
+                        <div
+                          key={missionaryId}
+                          className="flex items-center justify-between bg-white border rounded-lg p-3"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{missionary.name}</p>
+                            {missionary.email && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {missionary.email}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                openEditMissionaryModal(missionary)
+                              }
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                removeMissionaryFromCompanionship(missionaryId)
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Available missionaries to assign */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Available Missionaries</h4>
+
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search missionaries..."
+                    value={missionarySearchTerm}
+                    onChange={(e) => setMissionarySearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {getUnassignedMissionaries().length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No unassigned missionaries available
+                    </p>
+                  ) : (
+                    getUnassignedMissionaries().map((missionary) => (
+                      <div
+                        key={missionary.id}
+                        className="flex items-center justify-between bg-gray-50 border rounded-lg p-3"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium">{missionary.name}</p>
+                          {missionary.email && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {missionary.email}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditMissionaryModal(missionary)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              addMissionaryToCompanionship(missionary.id)
+                            }
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
+
+              {/* Create new missionary button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  resetMissionaryForm();
+                  setShowMissionaryModal(true);
+                }}
+                className="w-full"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create New Missionary
+              </Button>
             </div>
 
             {/* Notes */}
@@ -727,6 +987,239 @@ export default function CompanionshipsPage() {
                   "Update Companionship"
                 ) : (
                   "Create Companionship"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Missionary Creation Modal */}
+      <Dialog open={showMissionaryModal} onOpenChange={setShowMissionaryModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingMissionary ? "Edit Missionary" : "Create New Missionary"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingMissionary
+                ? "Update missionary information and preferences."
+                : "Add a new missionary to the system. They can then be assigned to a companionship."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleMissionarySubmit} className="space-y-4">
+            {/* Basic Info */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="missionary-name">Full Name *</Label>
+                <Input
+                  id="missionary-name"
+                  value={missionaryFormData.name}
+                  onChange={(e) =>
+                    setMissionaryFormData({
+                      ...missionaryFormData,
+                      name: e.target.value,
+                    })
+                  }
+                  placeholder="Elder John Smith"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="missionary-email">Email Address</Label>
+                <Input
+                  id="missionary-email"
+                  type="email"
+                  value={missionaryFormData.email}
+                  onChange={(e) =>
+                    setMissionaryFormData({
+                      ...missionaryFormData,
+                      email: e.target.value,
+                    })
+                  }
+                  placeholder="elder.smith@missionary.org"
+                />
+              </div>
+            </div>
+
+            {/* Dinner Preferences & Allergies */}
+            <div className="space-y-4">
+              <div>
+                <Label>Food Allergies</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Add each allergy separately. Leave blank if no allergies.
+                </p>
+                <div className="space-y-2">
+                  {missionaryFormData.allergies.map((allergy, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={allergy}
+                        onChange={(e) => {
+                          const newAllergies = [
+                            ...missionaryFormData.allergies,
+                          ];
+                          newAllergies[index] = e.target.value;
+                          setMissionaryFormData({
+                            ...missionaryFormData,
+                            allergies: newAllergies,
+                          });
+                        }}
+                        placeholder="e.g., Nuts, Dairy, Gluten"
+                      />
+                      {missionaryFormData.allergies.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newAllergies =
+                              missionaryFormData.allergies.filter(
+                                (_, i) => i !== index,
+                              );
+                            setMissionaryFormData({
+                              ...missionaryFormData,
+                              allergies: newAllergies,
+                            });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setMissionaryFormData({
+                        ...missionaryFormData,
+                        allergies: [...missionaryFormData.allergies, ""],
+                      })
+                    }
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Allergy
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label>Dinner Preferences</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Add dietary preferences or restrictions. Leave blank if none.
+                </p>
+                <div className="space-y-2">
+                  {missionaryFormData.dinnerPreferences.map(
+                    (preference, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          value={preference}
+                          onChange={(e) => {
+                            const newPreferences = [
+                              ...missionaryFormData.dinnerPreferences,
+                            ];
+                            newPreferences[index] = e.target.value;
+                            setMissionaryFormData({
+                              ...missionaryFormData,
+                              dinnerPreferences: newPreferences,
+                            });
+                          }}
+                          placeholder="e.g., Vegetarian, No spicy food"
+                        />
+                        {missionaryFormData.dinnerPreferences.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newPreferences =
+                                missionaryFormData.dinnerPreferences.filter(
+                                  (_, i) => i !== index,
+                                );
+                              setMissionaryFormData({
+                                ...missionaryFormData,
+                                dinnerPreferences: newPreferences,
+                              });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ),
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setMissionaryFormData({
+                        ...missionaryFormData,
+                        dinnerPreferences: [
+                          ...missionaryFormData.dinnerPreferences,
+                          "",
+                        ],
+                      })
+                    }
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Preference
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="missionary-notes">Additional Notes</Label>
+              <Textarea
+                id="missionary-notes"
+                value={missionaryFormData.notes}
+                onChange={(e) =>
+                  setMissionaryFormData({
+                    ...missionaryFormData,
+                    notes: e.target.value,
+                  })
+                }
+                placeholder="Any additional information about this missionary..."
+                rows={3}
+              />
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMissionaryModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={savingMissionary}
+                className="flex-1"
+              >
+                {savingMissionary ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creating...
+                  </>
+                ) : editingMissionary ? (
+                  "Update Missionary"
+                ) : (
+                  "Create Missionary"
                 )}
               </Button>
             </div>

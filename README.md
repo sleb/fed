@@ -36,6 +36,8 @@ The core application is **fully operational** with the following completed featu
 
 - **Companionship-based organization** - missionaries grouped by service area (2-3 per companionship)
 - **Individual missionary profiles** with personal contact info, dietary restrictions, and preferences
+- **Full missionary CRUD operations** - create, edit, and manage missionary records through admin interface
+- **Smart missionary assignment** - visual interface for adding/removing missionaries from companionships
 - **Companionship validation** - visual warnings for incomplete companionships needing more members
 - **Aggregated allergy tracking** - automatically combines individual allergies for companionship dinner planning
 - **Real-time dinner slot availability** with automatic updates
@@ -48,6 +50,7 @@ The core application is **fully operational** with the following completed featu
 - **Tailwind CSS v4** for modern styling and responsive layouts
 - **Loading states and error handling** throughout the application
 - **Intuitive filtering** by date range, area, and availability
+- **Search and filter functionality** for missionary selection and management
 
 ## 🛠 Tech Stack
 
@@ -77,7 +80,7 @@ The core application is **fully operational** with the following completed featu
 
 ### Collections
 
-> **Note**: The database uses a companionship-based model where missionaries are grouped by service area (2-3 per companionship). Companionship display names are auto-generated from assigned missionaries. Each companionship has one shared phone number, while individual missionaries have their own email addresses.
+> **Note**: The database uses a companionship-based model where missionaries are grouped by service area (2-3 per companionship). Companionship display names are auto-generated from assigned missionary names (e.g., "Elder Smith & Elder Johnson"). Each companionship has one shared phone number, while individual missionaries have their own email addresses.
 
 **users**
 
@@ -103,7 +106,6 @@ The core application is **fully operational** with the following completed featu
 {
   id: string;
   name: string;
-  phone?: string; // Individual missionaries may have personal phones
   email?: string; // Individual email addresses
   dinnerPreferences?: string[];
   allergies?: string[];
@@ -119,7 +121,7 @@ The core application is **fully operational** with the following completed featu
 ```typescript
 {
   id: string;
-  area: string; // Primary identifier - service area (display name auto-generated from assigned missionaries)
+  area: string; // Primary identifier - service area
   address: string;
   apartmentNumber?: string;
   phone: string; // Shared phone number for the companionship
@@ -327,13 +329,17 @@ firebase deploy --only firestore:rules  # Deploy security rules only
 
 ## 🎯 Next Steps & Roadmap
 
-### Phase 2: Enhanced Features (Upcoming)
+### Phase 2: Enhanced Features (Completed ✅)
 
-- [ ] **Missionary Management Interface** - Full CRUD operations for missionary profiles
-  - Admin interface for managing missionary records
-  - Soft delete with restore functionality
-  - Area-based organization and autocomplete
-  - Mobile-friendly modal forms
+- [x] **Missionary Management Interface** - Full CRUD operations for missionary profiles
+  - ✅ Admin interface for creating and editing missionary records
+  - ✅ Smart missionary-companionship assignment with visual interface
+  - ✅ Real-time filtering of available/assigned missionaries
+  - ✅ Search functionality for missionary selection
+  - ✅ Individual missionary contact info and dietary preference management
+  - ✅ Mobile-friendly modal forms with comprehensive validation
+  - [ ] Soft delete with restore functionality (future enhancement)
+  - [ ] Area-based organization and autocomplete (future enhancement)
 - [ ] **Companionship-Based Calendar System** - Enhanced scheduling approach
   - **Ward-level default calendar** - Set congregation-wide dinner schedule (e.g., "Monday-Friday 6:00 PM")
   - **Companionship = Area** - Missionaries serving in the same area form a companionship

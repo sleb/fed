@@ -9,7 +9,6 @@ const SAMPLE_MISSIONARIES: Omit<
 >[] = [
   {
     name: "Elder Smith",
-    phone: "(555) 123-4567",
     email: "elder.smith@missionary.org",
     dinnerPreferences: ["Italian", "Vegetarian"],
     allergies: ["Nuts"],
@@ -18,7 +17,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Johnson",
-    phone: "(555) 123-4568",
     email: "elder.johnson@missionary.org",
     dinnerPreferences: ["Mexican", "Home cooking"],
     allergies: ["Shellfish"],
@@ -27,7 +25,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Davis",
-    phone: "(555) 234-5678",
     email: "elder.davis@missionary.org",
     dinnerPreferences: ["American", "Asian"],
     allergies: [],
@@ -36,7 +33,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Wilson",
-    phone: "(555) 234-5679",
     email: "elder.wilson@missionary.org",
     dinnerPreferences: ["Healthy options", "Grilled food"],
     allergies: [],
@@ -45,7 +41,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Thompson",
-    phone: "(555) 345-6789",
     email: "elder.thompson@missionary.org",
     dinnerPreferences: ["BBQ", "Comfort food"],
     allergies: [],
@@ -54,7 +49,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Garcia",
-    phone: "(555) 345-6790",
     email: "elder.garcia@missionary.org",
     dinnerPreferences: ["Mexican", "Traditional"],
     allergies: ["Dairy"],
@@ -63,7 +57,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Brown",
-    phone: "(555) 456-7890",
     email: "elder.brown@missionary.org",
     dinnerPreferences: ["Pizza", "Sandwiches"],
     allergies: [],
@@ -72,7 +65,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Taylor",
-    phone: "(555) 456-7891",
     email: "elder.taylor@missionary.org",
     dinnerPreferences: ["Gluten-free", "Salads"],
     allergies: ["Gluten"],
@@ -81,7 +73,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Anderson",
-    phone: "(555) 567-8901",
     email: "elder.anderson@missionary.org",
     dinnerPreferences: ["Tex-Mex", "Burgers"],
     allergies: [],
@@ -90,7 +81,6 @@ const SAMPLE_MISSIONARIES: Omit<
   },
   {
     name: "Elder Martinez",
-    phone: "(555) 567-8902",
     email: "elder.martinez@missionary.org",
     dinnerPreferences: ["Grilled food", "Traditional"],
     allergies: [],
