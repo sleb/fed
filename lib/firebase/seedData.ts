@@ -98,6 +98,7 @@ const SAMPLE_COMPANIONSHIPS = [
     phone: "(555) 123-4567",
     notes: "Prefer dinner between 5-7 PM. Good with most families.",
     missionaryNames: ["Elder Smith", "Elder Johnson"],
+    daysOfWeek: [1, 2, 3, 4, 5, 6], // Monday through Saturday
   },
   {
     area: "Northside",
@@ -106,6 +107,7 @@ const SAMPLE_COMPANIONSHIPS = [
     phone: "(555) 234-5678",
     notes: "Available most evenings. Love trying new cuisines!",
     missionaryNames: ["Elder Davis", "Elder Wilson"],
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // All days
   },
   {
     area: "Eastside",
@@ -114,6 +116,7 @@ const SAMPLE_COMPANIONSHIPS = [
     phone: "(555) 345-6789",
     notes: "Elder Garcia speaks Spanish fluently. Prefer family-style meals.",
     missionaryNames: ["Elder Thompson", "Elder Garcia"],
+    daysOfWeek: [2, 3, 4, 5, 6], // Tuesday through Saturday
   },
   {
     area: "Westside",
@@ -122,6 +125,7 @@ const SAMPLE_COMPANIONSHIPS = [
     phone: "(555) 456-7890",
     notes: "Elder Taylor has celiac disease. Need gluten-free options.",
     missionaryNames: ["Elder Brown", "Elder Taylor"],
+    daysOfWeek: [1, 3, 5], // Monday, Wednesday, Friday
   },
   {
     area: "Southside",
@@ -130,12 +134,17 @@ const SAMPLE_COMPANIONSHIPS = [
     phone: "(555) 567-8901",
     notes: "Very active and have big appetites. Love outdoor activities.",
     missionaryNames: ["Elder Anderson", "Elder Martinez"],
+    daysOfWeek: [1, 2, 3, 4, 5, 6], // Monday through Saturday
   },
 ];
 
-// Generate dinner slots for the next 4 weeks
+// Generate dinner slots for the next 4 weeks based on companionship schedules
 const generateDinnerSlots = (
-  companionshipIds: string[],
+  companionships: {
+    id: string;
+    daysOfWeek: number[];
+    missionaryCount: number;
+  }[],
 ): Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] => {
   const slots: Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] = [];
   const today = new Date();
@@ -155,23 +164,22 @@ const generateDinnerSlots = (
       const date = new Date(today);
       date.setDate(today.getDate() + week * 7 + day + 1); // Start from tomorrow
 
-      // Skip Sundays (day 0) for dinner appointments
-      if (date.getDay() === 0) continue;
+      const dayOfWeek = date.getDay();
 
-      // Each companionship gets some dinner slots per week
-      companionshipIds.forEach((companionshipId, index) => {
-        // Skip some days to make it realistic (not every companionship every day)
-        if ((day + index) % 3 === 0) return;
-
-        slots.push({
-          companionshipId: companionshipId,
-          date,
-          dayOfWeek: daysOfWeek[date.getDay()],
-          status: "available",
-          guestCount: 2, // Usually 2 missionaries in a companionship
-          notes: "",
-          createdBy: "system-seed",
-        });
+      // Each companionship gets slots based on their available days
+      companionships.forEach((companionship) => {
+        // Only create slots for days this companionship is available
+        if (companionship.daysOfWeek.includes(dayOfWeek)) {
+          slots.push({
+            companionshipId: companionship.id,
+            date,
+            dayOfWeek: daysOfWeek[dayOfWeek],
+            status: "available",
+            guestCount: companionship.missionaryCount,
+            notes: "",
+            createdBy: "system-seed",
+          });
+        }
       });
     }
   }
@@ -222,6 +230,7 @@ export const seedDatabase = async (): Promise<void> => {
         phone: companionshipTemplate.phone,
         notes: companionshipTemplate.notes,
         missionaryIds,
+        daysOfWeek: companionshipTemplate.daysOfWeek,
         isActive: true,
       };
 
@@ -239,7 +248,15 @@ export const seedDatabase = async (): Promise<void> => {
 
     // Step 3: Generate and create dinner slots
     console.log("📅 Creating dinner slots...");
-    const dinnerSlots = generateDinnerSlots(companionshipIds);
+
+    // Prepare companionship data for slot generation
+    const companionshipData = SAMPLE_COMPANIONSHIPS.map((template, index) => ({
+      id: companionshipIds[index],
+      daysOfWeek: template.daysOfWeek,
+      missionaryCount: template.missionaryNames.length,
+    }));
+
+    const dinnerSlots = generateDinnerSlots(companionshipData);
 
     for (const slot of dinnerSlots) {
       const slotData = {

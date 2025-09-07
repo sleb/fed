@@ -17,6 +17,7 @@ export interface Companionship {
   apartmentNumber?: string;
   phone: string; // Required shared phone number for the companionship
   missionaryIds: string[];
+  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. Default: [1,2,3,4,5,6,0] (Mon-Sun)
   notes?: string;
   isActive: boolean;
   createdAt: Date;
@@ -39,32 +40,6 @@ export interface DinnerSlot {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // Admin who created the slot
-}
-
-export interface CalendarTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. Default: [1,2,3,4,5,6] (Mon-Sat)
-  isDefault: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
-}
-
-export interface CompanionshipCalendar {
-  id: string;
-  companionshipId: string;
-  name: string;
-  description?: string;
-  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. e.g., [1,2,3,4,5,6] (Mon-Sat)
-  startDate: Date;
-  endDate?: Date; // Optional: null means ongoing
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
 }
 
 export interface Signup {

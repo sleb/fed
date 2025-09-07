@@ -102,6 +102,7 @@ export default function CompanionshipsPage() {
     phone: "",
     notes: "",
     missionaryIds: [] as string[],
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6] as number[], // All days by default
   });
 
   // Form state for missionary
@@ -218,6 +219,7 @@ export default function CompanionshipsPage() {
       phone: "",
       notes: "",
       missionaryIds: [],
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // All days by default
     });
     setEditingCompanionship(null);
     setError(null);
@@ -236,6 +238,7 @@ export default function CompanionshipsPage() {
       phone: companionship.phone || "",
       notes: companionship.notes || "",
       missionaryIds: companionship.missionaryIds,
+      daysOfWeek: companionship.daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
     });
     setEditingCompanionship(companionship);
     setShowAddModal(true);
@@ -938,6 +941,51 @@ export default function CompanionshipsPage() {
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create New Missionary
               </Button>
+            </div>
+
+            {/* Days of Week for Dinner Signups */}
+            <div className="space-y-4">
+              <h3 className="font-medium">Dinner Schedule</h3>
+              <p className="text-sm text-muted-foreground">
+                Select which days of the week this companionship will be
+                available for dinner signups
+              </p>
+
+              <div className="grid grid-cols-7 gap-2">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (day, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                      <label className="text-sm font-medium mb-2">{day}</label>
+                      <input
+                        type="checkbox"
+                        checked={formData.daysOfWeek.includes(index)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({
+                              ...formData,
+                              daysOfWeek: [
+                                ...formData.daysOfWeek,
+                                index,
+                              ].sort(),
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              daysOfWeek: formData.daysOfWeek.filter(
+                                (d) => d !== index,
+                              ),
+                            });
+                          }
+                        }}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  ),
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Dinner slots will only be created for selected days
+              </p>
             </div>
 
             {/* Notes */}

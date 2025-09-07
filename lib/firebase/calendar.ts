@@ -1,13 +1,5 @@
+import { Companionship, DinnerSlot, Missionary } from "@/types";
 import {
-  CalendarTemplate,
-  Companionship,
-  CompanionshipCalendar,
-  DinnerSlot,
-  Missionary,
-} from "@/types";
-import {
-  CalendarTemplateService,
-  CompanionshipCalendarService,
   CompanionshipService,
   DinnerSlotService,
   MissionaryService,
@@ -15,73 +7,13 @@ import {
 
 // Calendar utility functions
 export class CalendarService {
-  // Get the default template or create one if none exists
-  static async ensureDefaultTemplate(): Promise<CalendarTemplate> {
-    let defaultTemplate = await CalendarTemplateService.getDefaultTemplate();
-
-    if (!defaultTemplate) {
-      // Create a default template
-      const templateId = await CalendarTemplateService.createTemplate({
-        name: "Ward Default Schedule",
-        description:
-          "Default dinner schedule for all companionships - Monday through Saturday",
-        daysOfWeek: [1, 2, 3, 4, 5, 6], // Monday through Saturday
-        isDefault: true,
-        isActive: true,
-        createdBy: "system",
-      });
-
-      defaultTemplate = await CalendarTemplateService.getTemplate(templateId);
-      if (!defaultTemplate) {
-        throw new Error("Failed to create default template");
-      }
-    }
-
-    return defaultTemplate;
-  }
-
-  // Create calendar for a companionship using default template
-  static async createCompanionshipCalendar(
-    companionshipId: string,
-    createdBy: string,
-    startDate?: Date,
-    templateId?: string,
-  ): Promise<string> {
-    const template = templateId
-      ? await CalendarTemplateService.getTemplate(templateId)
-      : await this.ensureDefaultTemplate();
-
-    if (!template) {
-      throw new Error("Calendar template not found");
-    }
-
-    const calendarData: Omit<
-      CompanionshipCalendar,
-      "id" | "createdAt" | "updatedAt"
-    > = {
-      companionshipId,
-      name: `${template.name} (Copy)`,
-      description: template.description,
-      daysOfWeek: [...template.daysOfWeek], // Copy array
-      startDate: startDate || new Date(),
-      isActive: true,
-      createdBy,
-    };
-
-    return await CompanionshipCalendarService.createCalendar(calendarData);
-  }
-
-  // Generate dinner slots for a companionship calendar
-  static async generateSlotsForCalendar(
-    calendar: CompanionshipCalendar,
+  // Generate dinner slots for a companionship based on their schedule
+  static async generateSlotsForCompanionship(
     companionship: Companionship,
     startDate: Date,
     endDate: Date,
     createdBy: string,
   ): Promise<number> {
-    // Use calendar's direct schedule settings
-    const daysOfWeek = calendar.daysOfWeek;
-
     const slotsCreated: Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] =
       [];
     const currentDate = new Date(startDate);
@@ -98,8 +30,8 @@ export class CalendarService {
     while (currentDate <= endDate) {
       const dayOfWeek = currentDate.getDay();
 
-      // Check if this day is included in the schedule
-      if (daysOfWeek.includes(dayOfWeek)) {
+      // Check if this day is included in the companionship's schedule
+      if (companionship.daysOfWeek.includes(dayOfWeek)) {
         // Create one slot per day
         slotsCreated.push({
           companionshipId: companionship.id,
@@ -126,15 +58,11 @@ export class CalendarService {
     return createdCount;
   }
 
-  // Auto-generate slots for all active companionships that don't have calendars
-  static async initializeCalendarsForAllCompanionships(
-    createdBy: string,
-  ): Promise<{
-    calendarsCreated: number;
+  // Auto-generate slots for all active companionships
+  static async initializeSlotsForAllCompanionships(createdBy: string): Promise<{
     slotsCreated: number;
   }> {
     const companionships = await CompanionshipService.getActiveCompanionships();
-    let calendarsCreated = 0;
     let totalSlotsCreated = 0;
 
     // Generate slots for next 3 months
@@ -143,40 +71,17 @@ export class CalendarService {
     endDate.setMonth(endDate.getMonth() + 3);
 
     for (const companionship of companionships) {
-      // Check if companionship already has an active calendar
-      const existingCalendar =
-        await CompanionshipCalendarService.getActiveCalendarForCompanionship(
-          companionship.id,
-        );
-
-      if (!existingCalendar) {
-        // Create calendar for this companionship
-        const calendarId = await this.createCompanionshipCalendar(
-          companionship.id,
-          createdBy,
-          startDate,
-        );
-        calendarsCreated++;
-
-        // Get the created calendar
-        const newCalendar =
-          await CompanionshipCalendarService.getCalendar(calendarId);
-        if (newCalendar) {
-          // Generate slots
-          const slotsCreated = await this.generateSlotsForCalendar(
-            newCalendar,
-            companionship,
-            startDate,
-            endDate,
-            createdBy,
-          );
-          totalSlotsCreated += slotsCreated;
-        }
-      }
+      // Generate slots for this companionship
+      const slotsCreated = await this.generateSlotsForCompanionship(
+        companionship,
+        startDate,
+        endDate,
+        createdBy,
+      );
+      totalSlotsCreated += slotsCreated;
     }
 
     return {
-      calendarsCreated,
       slotsCreated: totalSlotsCreated,
     };
   }
@@ -254,21 +159,17 @@ export class CalendarService {
     };
   }
 
-  // Extend calendar slots for a companionship
-  static async extendCompanionshipCalendar(
+  // Extend slots for a companionship
+  static async extendCompanionshipSlots(
     companionshipId: string,
     months: number,
     createdBy: string,
   ): Promise<number> {
-    const calendar =
-      await CompanionshipCalendarService.getActiveCalendarForCompanionship(
-        companionshipId,
-      );
     const companionship =
       await CompanionshipService.getCompanionship(companionshipId);
 
-    if (!calendar || !companionship) {
-      throw new Error("Companionship or calendar not found");
+    if (!companionship) {
+      throw new Error("Companionship not found");
     }
 
     // Find the last existing slot date
@@ -287,8 +188,7 @@ export class CalendarService {
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + months);
 
-    return await this.generateSlotsForCalendar(
-      calendar,
+    return await this.generateSlotsForCompanionship(
       companionship,
       startDate,
       endDate,

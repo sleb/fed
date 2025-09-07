@@ -90,7 +90,6 @@ export default function CalendarPage() {
 
   // Form state
   const [signupForm, setSignupForm] = useState({
-    guestCount: 2,
     specialRequests: "",
     userPhone: "",
     contactPreference: "email" as "email" | "phone" | "both",
@@ -159,12 +158,20 @@ export default function CalendarPage() {
             original: date,
             type: typeof date,
             isFirestoreTimestamp:
-              date && typeof date === "object" && date.seconds,
+              date && typeof date === "object" && "seconds" in date,
             converted: new Date(
-              date instanceof Date ? date : date?.toDate ? date.toDate() : date,
+              date instanceof Date
+                ? date
+                : (date as { toDate: () => Date })?.toDate
+                  ? (date as { toDate: () => Date }).toDate()
+                  : date,
             ),
             dateString: new Date(
-              date instanceof Date ? date : date?.toDate ? date.toDate() : date,
+              date instanceof Date
+                ? date
+                : (date as { toDate: () => Date })?.toDate
+                  ? (date as { toDate: () => Date }).toDate()
+                  : date,
             ).toDateString(),
           };
         }),
@@ -197,9 +204,13 @@ export default function CalendarPage() {
       const daySlots = slots.filter((slot) => {
         // Handle different date formats (Firestore Timestamp, Date object, string)
         let slotDate;
-        if (slot.date && typeof slot.date === "object" && slot.date.toDate) {
+        if (
+          slot.date &&
+          typeof slot.date === "object" &&
+          "toDate" in slot.date
+        ) {
           // Firestore Timestamp
-          slotDate = slot.date.toDate();
+          slotDate = (slot.date as { toDate: () => Date }).toDate();
         } else if (slot.date instanceof Date) {
           // Already a Date object
           slotDate = slot.date;
@@ -310,7 +321,6 @@ export default function CalendarPage() {
       setSelectedSignup(existingSignup);
       setSelectedSlot(slot);
       setSignupForm({
-        guestCount: existingSignup.guestCount,
         specialRequests: existingSignup.specialRequests || "",
         userPhone: existingSignup.userPhone || "",
         contactPreference: existingSignup.contactPreference,
@@ -321,7 +331,6 @@ export default function CalendarPage() {
       // Slot is available for signup
       setSelectedSlot(slot);
       setSignupForm({
-        guestCount: slot.guestCount,
         specialRequests: "",
         userPhone: user?.phoneNumber || "",
         contactPreference: "email",
@@ -343,7 +352,7 @@ export default function CalendarPage() {
 
       const signupData = {
         dinnerSlotId: selectedSlot.id,
-        guestCount: signupForm.guestCount,
+        guestCount: selectedSlot.guestCount, // Use the slot's missionary count
         specialRequests: signupForm.specialRequests,
         userPhone: signupForm.userPhone,
         contactPreference: signupForm.contactPreference,
@@ -390,7 +399,7 @@ export default function CalendarPage() {
     setSaving(true);
     try {
       await SignupService.updateSignup(selectedSignup.id, {
-        guestCount: signupForm.guestCount,
+        guestCount: selectedSlot.guestCount, // Use the slot's missionary count
         specialRequests: signupForm.specialRequests,
         userPhone: signupForm.userPhone,
         contactPreference: signupForm.contactPreference,
@@ -571,7 +580,7 @@ export default function CalendarPage() {
                   <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside space-y-1">
                     {slots.length === 0 ? (
                       <>
-                        <li>The database hasn't been seeded with test data</li>
+                        <li>The database has not been seeded with test data</li>
                         <li>
                           No dinner slots have been created for this time period
                         </li>
@@ -767,19 +776,11 @@ export default function CalendarPage() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="guest-count">Number of Missionaries</Label>
-                  <Input
-                    id="guest-count"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={signupForm.guestCount}
-                    onChange={(e) =>
-                      setSignupForm({
-                        ...signupForm,
-                        guestCount: parseInt(e.target.value) || 1,
-                      })
-                    }
-                  />
+                  <div className="p-3 bg-gray-50 border rounded-md">
+                    <span className="text-sm font-medium">
+                      {selectedSlot?.guestCount} missionaries
+                    </span>
+                  </div>
                 </div>
 
                 <div>
@@ -813,6 +814,24 @@ export default function CalendarPage() {
                     }
                     placeholder="Any special dietary needs or requests..."
                     rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="member-notes">
+                    Notes for Missionaries/Coordinator
+                  </Label>
+                  <Textarea
+                    id="member-notes"
+                    value={signupForm.notes}
+                    onChange={(e) =>
+                      setSignupForm({
+                        ...signupForm,
+                        notes: e.target.value,
+                      })
+                    }
+                    placeholder="Any additional notes or information..."
+                    rows={2}
                   />
                 </div>
               </div>
@@ -853,19 +872,11 @@ export default function CalendarPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="modify-guest-count">Number of Missionaries</Label>
-              <Input
-                id="modify-guest-count"
-                type="number"
-                min="1"
-                max="10"
-                value={signupForm.guestCount}
-                onChange={(e) =>
-                  setSignupForm({
-                    ...signupForm,
-                    guestCount: parseInt(e.target.value) || 1,
-                  })
-                }
-              />
+              <div className="p-3 bg-gray-50 border rounded-md">
+                <span className="text-sm font-medium">
+                  {selectedSlot?.guestCount} missionaries
+                </span>
+              </div>
             </div>
 
             <div>
@@ -896,6 +907,24 @@ export default function CalendarPage() {
                 }
                 placeholder="Any special dietary needs or requests..."
                 rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="modify-member-notes">
+                Notes for Missionaries/Coordinator
+              </Label>
+              <Textarea
+                id="modify-member-notes"
+                value={signupForm.notes}
+                onChange={(e) =>
+                  setSignupForm({
+                    ...signupForm,
+                    notes: e.target.value,
+                  })
+                }
+                placeholder="Any additional notes or information..."
+                rows={2}
               />
             </div>
 
