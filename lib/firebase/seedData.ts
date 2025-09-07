@@ -199,16 +199,6 @@ export const seedDatabase = async (): Promise<void> => {
       );
     }
 
-    // Step 3: Generate and create dinner slots
-    console.log("📅 Creating dinner slots...");
-
-    // Prepare companionship data for slot generation
-    const companionshipData = SAMPLE_COMPANIONSHIPS.map((template, index) => ({
-      id: companionshipIds[index],
-      daysOfWeek: template.daysOfWeek,
-      missionaryCount: template.missionaryNames.length,
-    }));
-
     console.log(`✅ Dynamic slot system ready`);
 
     // Step 4: Create a sample admin user (optional)

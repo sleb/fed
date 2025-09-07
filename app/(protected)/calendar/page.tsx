@@ -127,7 +127,7 @@ export default function CalendarPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentDate, user]);
+  }, [currentDate]);
 
   const generateCalendarGrid = useCallback(() => {
     console.log("🗓️ Generating calendar grid...");
