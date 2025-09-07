@@ -5,6 +5,36 @@ import {
   SignupService,
 } from "./firestore";
 
+// Helper function to convert Firestore Timestamp or Date to Date object
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toDate = (dateValue: any): Date => {
+  if (!dateValue) {
+    throw new Error("Date value is null or undefined");
+  }
+
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+
+  // Firestore Timestamp with toDate method
+  if (dateValue && typeof dateValue.toDate === "function") {
+    return dateValue.toDate();
+  }
+
+  // Firestore Timestamp object format
+  if (dateValue && typeof dateValue.seconds === "number") {
+    return new Date(dateValue.seconds * 1000);
+  }
+
+  // String, number, or other format
+  const parsedDate = new Date(dateValue);
+  if (isNaN(parsedDate.getTime())) {
+    throw new Error(`Invalid date value: ${JSON.stringify(dateValue)}`);
+  }
+
+  return parsedDate;
+};
+
 // Dynamic slot generation service - creates virtual slots from companionship schedules
 export class CalendarService {
   // Generate virtual slots for a companionship based on their available days
@@ -78,8 +108,19 @@ export class CalendarService {
     // Map signups by companionship + date for efficient lookup
     const signupMap = new Map<string, Signup>();
     signups.forEach((signup) => {
-      const key = `${signup.companionshipId}-${signup.dinnerDate.toDateString()}`;
-      signupMap.set(key, signup);
+      try {
+        const signupDate = toDate(signup.dinnerDate);
+        const key = `${signup.companionshipId}-${signupDate.toDateString()}`;
+        signupMap.set(key, signup);
+      } catch (error) {
+        console.error("Error processing signup date:", {
+          signupId: signup.id,
+          dinnerDate: signup.dinnerDate,
+          dateType: typeof signup.dinnerDate,
+          error: error,
+        });
+        // Skip this signup to prevent calendar from breaking
+      }
     });
 
     // Mark slots as taken where signups exist
@@ -126,8 +167,19 @@ export class CalendarService {
     // Map existing signups by date
     const signupMap = new Map<string, Signup>();
     signups.forEach((signup) => {
-      const key = signup.dinnerDate.toDateString();
-      signupMap.set(key, signup);
+      try {
+        const signupDate = toDate(signup.dinnerDate);
+        const key = signupDate.toDateString();
+        signupMap.set(key, signup);
+      } catch (error) {
+        console.error("Error processing signup date:", {
+          signupId: signup.id,
+          dinnerDate: signup.dinnerDate,
+          dateType: typeof signup.dinnerDate,
+          error: error,
+        });
+        // Skip this signup to prevent calendar from breaking
+      }
     });
 
     // Mark slots as taken where signups exist

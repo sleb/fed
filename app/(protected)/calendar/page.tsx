@@ -596,90 +596,91 @@ export default function CalendarPage() {
             <DialogHeader>
               <DialogTitle>Sign Up for Dinner</DialogTitle>
               <DialogDescription>
-                {selectedSlot &&
-                  companionships.get(selectedSlot.companionshipId) && (
-                    <>
-                      <div className="mb-4">
-                        <p className="font-medium">
-                          {getCompanionshipName(
-                            companionships.get(selectedSlot.companionshipId)!,
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {selectedSlot.date.toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Number of missionaries: {selectedSlot.guestCount}
-                        </p>
-                      </div>
-
-                      {/* Dietary Information */}
-                      {(() => {
-                        const companionship = companionships.get(
-                          selectedSlot.companionshipId,
-                        )!;
-                        const allergies = getAggregatedAllergies(companionship);
-                        const preferences =
-                          getAggregatedPreferences(companionship);
-                        const notes = getAggregatedNotes(companionship);
-
-                        return (
-                          <div className="space-y-3 mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                            <h4 className="font-medium text-yellow-800 flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              Dietary Information
-                            </h4>
-
-                            {allergies.length > 0 && (
-                              <div>
-                                <span className="font-medium text-red-700">
-                                  Allergies:{" "}
-                                </span>
-                                <span className="text-red-600">
-                                  {allergies.join(", ")}
-                                </span>
-                              </div>
-                            )}
-
-                            {preferences.length > 0 && (
-                              <div>
-                                <span className="font-medium text-blue-700">
-                                  Preferences:{" "}
-                                </span>
-                                <span className="text-blue-600">
-                                  {preferences.join(", ")}
-                                </span>
-                              </div>
-                            )}
-
-                            {notes && (
-                              <div>
-                                <span className="font-medium text-gray-700">
-                                  Notes:{" "}
-                                </span>
-                                <span className="text-gray-600">{notes}</span>
-                              </div>
-                            )}
-
-                            {allergies.length === 0 &&
-                              preferences.length === 0 &&
-                              !notes && (
-                                <p className="text-gray-600">
-                                  No special dietary requirements
-                                </p>
-                              )}
-                          </div>
-                        );
-                      })()}
-                    </>
-                  )}
+                Sign up to provide dinner for missionaries
               </DialogDescription>
             </DialogHeader>
+
+            {selectedSlot &&
+              companionships.get(selectedSlot.companionshipId) && (
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium">
+                      {getCompanionshipName(
+                        companionships.get(selectedSlot.companionshipId)!,
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {selectedSlot.date.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Number of missionaries: {selectedSlot.guestCount}
+                    </p>
+                  </div>
+
+                  {/* Dietary Information */}
+                  {(() => {
+                    const companionship = companionships.get(
+                      selectedSlot.companionshipId,
+                    )!;
+                    const allergies = getAggregatedAllergies(companionship);
+                    const preferences = getAggregatedPreferences(companionship);
+                    const notes = getAggregatedNotes(companionship);
+
+                    return (
+                      <div className="space-y-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <h4 className="font-medium text-yellow-800 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Dietary Information
+                        </h4>
+
+                        {allergies.length > 0 && (
+                          <div>
+                            <span className="font-medium text-red-700">
+                              Allergies:{" "}
+                            </span>
+                            <span className="text-red-600">
+                              {allergies.join(", ")}
+                            </span>
+                          </div>
+                        )}
+
+                        {preferences.length > 0 && (
+                          <div>
+                            <span className="font-medium text-blue-700">
+                              Preferences:{" "}
+                            </span>
+                            <span className="text-blue-600">
+                              {preferences.join(", ")}
+                            </span>
+                          </div>
+                        )}
+
+                        {notes && (
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Notes:{" "}
+                            </span>
+                            <span className="text-gray-600">{notes}</span>
+                          </div>
+                        )}
+
+                        {allergies.length === 0 &&
+                          preferences.length === 0 &&
+                          !notes && (
+                            <p className="text-gray-600">
+                              No special dietary requirements
+                            </p>
+                          )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
             <div className="space-y-4">
               <div>
@@ -755,26 +756,28 @@ export default function CalendarPage() {
             <DialogHeader>
               <DialogTitle>Modify Your Signup</DialogTitle>
               <DialogDescription>
-                {selectedSlot &&
-                  companionships.get(selectedSlot.companionshipId) && (
-                    <div className="mb-4">
-                      <p className="font-medium">
-                        {getCompanionshipName(
-                          companionships.get(selectedSlot.companionshipId)!,
-                        )}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {selectedSlot.date.toLocaleDateString("en-US", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  )}
+                Update your dinner signup details
               </DialogDescription>
             </DialogHeader>
+
+            {selectedSlot &&
+              companionships.get(selectedSlot.companionshipId) && (
+                <div className="mb-4">
+                  <p className="font-medium">
+                    {getCompanionshipName(
+                      companionships.get(selectedSlot.companionshipId)!,
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {selectedSlot.date.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              )}
 
             <div className="space-y-4">
               <div>

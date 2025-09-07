@@ -14,7 +14,6 @@ import { updateUserRole } from "@/lib/firebase/auth";
 import { seedDatabase } from "@/lib/firebase/seedData";
 import {
   AlertTriangle,
-  Calendar,
   Database,
   UserCog,
   Users,
@@ -101,7 +100,7 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card
             className="hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => router.push("/calendar")}
@@ -150,38 +149,6 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">
                 Manage companionships and assignments
               </p>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => router.push("/admin/calendar")}
-          >
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="h-5 w-5" />
-                Calendar Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Create dinner calendars and schedules
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Database className="h-5 w-5" />
-                Reports
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                View signup analytics
-              </p>
-              <p className="text-xs text-gray-500 mt-1">(Coming soon)</p>
             </CardContent>
           </Card>
         </div>

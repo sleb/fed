@@ -227,7 +227,17 @@ fed/
    firebase deploy --only firestore:rules
    ```
 
-4. **Seed development data**
+4. **Clear existing data (if upgrading)**
+
+   If you have existing data from an older version, clear the database first:
+
+   ```bash
+   # In Firebase Console, delete all documents from:
+   # - signups collection (old format incompatible)
+   # - dinnerSlots collection (no longer used)
+   ```
+
+5. **Seed development data**
    ```bash
    npm run dev
    # Navigate to /admin and run the database seeding function
