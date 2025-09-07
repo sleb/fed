@@ -20,6 +20,7 @@ import {
 } from "@/lib/firebase/firestore";
 import { Companionship, Missionary, Signup, VirtualDinnerSlot } from "@/types";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -57,7 +58,7 @@ interface CalendarDay {
 }
 
 export default function CalendarPage() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
 
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -314,10 +315,14 @@ export default function CalendarPage() {
       });
       setShowModifyModal(true);
     } else if (slot.status === "available") {
-      // Slot is available - show signup modal
+      // Slot is available - show signup modal with user's saved preferences
+      const contactMethod = userData?.preferences?.contactMethod || "email";
+      const mappedContactPreference =
+        contactMethod === "sms" ? "phone" : contactMethod;
+
       setSignupForm({
-        userPhone: "",
-        contactPreference: "email",
+        userPhone: userData?.phone || "",
+        contactPreference: mappedContactPreference,
         notes: "",
       });
       setShowSignupModal(true);
@@ -596,7 +601,7 @@ export default function CalendarPage() {
             <DialogHeader>
               <DialogTitle>Sign Up for Dinner</DialogTitle>
               <DialogDescription>
-                Sign up to provide dinner for missionaries
+                Confirm your signup details below
               </DialogDescription>
             </DialogHeader>
 
@@ -682,47 +687,53 @@ export default function CalendarPage() {
                 </div>
               )}
 
+            {/* Your Contact Information */}
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="userPhone">Phone Number (Optional)</Label>
-                <Input
-                  id="userPhone"
-                  type="tel"
-                  placeholder="Your phone number"
-                  value={signupForm.userPhone}
-                  onChange={(e) =>
-                    setSignupForm({ ...signupForm, userPhone: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="contactPreference">Contact Preference</Label>
-                <select
-                  id="contactPreference"
-                  className="w-full mt-1 p-2 border border-gray-300 rounded-md"
-                  value={signupForm.contactPreference}
-                  onChange={(e) =>
-                    setSignupForm({
-                      ...signupForm,
-                      contactPreference: e.target.value as
-                        | "email"
-                        | "phone"
-                        | "both",
-                    })
-                  }
-                >
-                  <option value="email">Email</option>
-                  <option value="phone">Phone</option>
-                  <option value="both">Both</option>
-                </select>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-blue-800">
+                    Your Contact Information
+                  </h4>
+                  <Link
+                    href="/profile"
+                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                    onClick={() => setShowSignupModal(false)}
+                  >
+                    Edit Profile
+                  </Link>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">Email:</span> {user?.email}
+                  </div>
+                  {userData?.phone && (
+                    <div>
+                      <span className="font-medium">Phone:</span>{" "}
+                      {userData.phone}
+                    </div>
+                  )}
+                  {userData?.address && (
+                    <div>
+                      <span className="font-medium">Address:</span>{" "}
+                      {userData.address}
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">Preferred contact:</span>{" "}
+                    {userData?.preferences?.contactMethod === "email" &&
+                      "Email"}
+                    {userData?.preferences?.contactMethod === "sms" && "SMS"}
+                    {userData?.preferences?.contactMethod === "both" &&
+                      "Email & SMS"}
+                  </div>
+                </div>
               </div>
 
               <div>
                 <Label htmlFor="notes">Notes for Missionaries (Optional)</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Any additional notes or information..."
+                  placeholder="Any special instructions, directions, or notes..."
                   value={signupForm.notes}
                   onChange={(e) =>
                     setSignupForm({ ...signupForm, notes: e.target.value })

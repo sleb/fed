@@ -35,7 +35,18 @@ export default function OnboardingPage() {
 
     try {
       // Update user profile with onboarding data
-      const updates: any = {
+      const updates: {
+        onboardingCompleted: boolean;
+        preferences: {
+          contactMethod: "email" | "sms" | "both";
+          signupReminders: boolean;
+          appointmentReminders: boolean;
+          changeNotifications: boolean;
+          reminderDaysBefore: number;
+        };
+        phone?: string;
+        address?: string;
+      } = {
         onboardingCompleted: true,
         preferences: {
           contactMethod: formData.contactMethod,

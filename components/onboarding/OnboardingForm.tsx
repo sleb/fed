@@ -141,7 +141,7 @@ export default function OnboardingForm({
             Welcome to Dinner Coordinator!
           </CardTitle>
           <CardDescription className="text-lg">
-            Let's set up your profile to help coordinate missionary dinners
+            Let&apos;s set up your profile to help coordinate missionary dinners
           </CardDescription>
         </CardHeader>
 
@@ -391,9 +391,10 @@ export default function OnboardingForm({
                         Phone Number Required
                       </h4>
                       <p className="text-sm text-yellow-700 mt-1">
-                        You've chosen to receive SMS notifications, but haven't
-                        provided a phone number. Please add your phone number or
-                        select "Email Only" for notifications.
+                        You&apos;ve chosen to receive SMS notifications, but
+                        haven&apos;t provided a phone number. Please add your
+                        phone number or select &quot;Email Only&quot; for
+                        notifications.
                       </p>
                     </div>
                   </div>

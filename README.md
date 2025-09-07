@@ -18,17 +18,18 @@ A modern Next.js application for coordinating dinners between ward members and m
 
 ### User Onboarding Flow
 
-New users are automatically prompted to:
+New users are automatically prompted to complete their profile:
 
 - **Contact Information**: Phone number and address (optional)
 - **Notification Preferences**: Email, SMS, or both
 - **Notification Types**: Signup reminders, appointment reminders, change notifications
 - **Reminder Timing**: How many days before dinner to send reminders
+- **Contact Method Validation**: Ensures phone number is provided if SMS notifications are selected
 
 ### User Roles
 
-- **Members**: Sign up for dinner slots, manage their profile and preferences
-- **Admins**: Manage missionaries, companionships, and monitor all signups
+- **Members**: Sign up for dinner slots, manage their profile and notification preferences
+- **Admins**: Manage missionaries, companionships, monitor all signups, and access admin dashboard
 
 ### Companionship Schedules
 
@@ -168,7 +169,8 @@ fed/
 │   │   │   ├── missionaries/     # Manage missionaries
 │   │   │   └── page.tsx          # Admin dashboard
 │   │   ├── calendar/             # Member calendar view
-│   │   └── onboarding/           # New user setup
+│   │   ├── onboarding/           # New user setup flow
+│   │   └── profile/              # User profile and preferences
 │   ├── globals.css               # Global styles
 │   ├── layout.tsx                # Root layout
 │   └── page.tsx                  # Landing page
@@ -198,22 +200,24 @@ fed/
 ### New User Flow
 
 1. **Sign in with Google** - Automatic account creation
-2. **Onboarding** - Set contact info and notification preferences
+2. **Onboarding** - Set contact info and notification preferences with validation
 3. **Calendar Access** - Browse and sign up for dinner slots
+4. **Profile Management** - Edit preferences anytime via dedicated profile page
 
 ### For Members
 
 - **Visual Calendar**: Color-coded slots (Available, Taken, Your Signups)
+- **Streamlined Signup**: Modal displays saved contact info with link to edit profile
 - **Dietary Information**: Clear display of missionary allergies and preferences
-- **Smart Validation**: Contact method validation (phone required for SMS)
-- **Profile Management**: Update preferences and contact info anytime
+- **Profile Management**: Dedicated profile page for contact info and notification preferences
+- **Smart Validation**: Contact method validation (phone required for SMS notifications)
 
 ### For Administrators
 
-- **Zero Maintenance**: No slot generation needed
-- **Real-time Monitoring**: Dashboard shows upcoming signups
-- **User Management**: View member profiles and contact preferences
-- **Data Seeding**: Development tools for testing
+- **Zero Maintenance**: No slot generation needed - dynamic slots from companionship schedules
+- **Real-time Monitoring**: Dashboard shows upcoming signups and member activity
+- **User Management**: View member profiles, contact preferences, and signup statistics
+- **Data Management**: Development tools for seeding test data and debugging
 
 ## 🔄 System Architecture Benefits
 
@@ -334,27 +338,29 @@ node scripts/seedEmulator.js seed        # Seed test data
 
 ### Phase 1: Core Functionality (Current)
 
-- [x] Authentication and authorization
-- [x] User onboarding flow
+- [x] Authentication and authorization with Google OAuth
+- [x] Complete user onboarding flow with validation
+- [x] User profile management with notification preferences
 - [x] Missionary and companionship management
 - [x] Dynamic calendar with virtual slots
-- [x] Basic signup functionality
-- [x] Admin dashboard
+- [x] Streamlined signup flow with saved user preferences
+- [x] Admin dashboard with data management tools
 
 ### Phase 2: Enhanced Features
 
-- [ ] Email/SMS notifications
-- [ ] Reminder system implementation
-- [ ] Member profile editing
+- [ ] Email/SMS notification implementation (backend)
+- [ ] Automated reminder system
 - [ ] Signup modification and cancellation
-- [ ] Enhanced admin tools
+- [ ] Enhanced admin reporting and analytics
+- [ ] Bulk member management tools
 
 ### Phase 3: Polish & Scale
 
-- [ ] Complete notification system
-- [ ] Advanced reporting
-- [ ] Error handling and recovery
-- [ ] Performance optimization
+- [ ] Complete notification delivery system
+- [ ] Advanced reporting and data export
+- [ ] Error handling and recovery mechanisms
+- [ ] Performance optimization for large datasets
+- [ ] Multi-ward/stake support
 - [ ] Production deployment guides
 
 ## 🛠 Technology Stack

@@ -144,7 +144,7 @@ export const updateUserProfile = async (
   updates: Partial<Omit<UserData, "id" | "createdAt">>,
 ): Promise<void> => {
   // Filter out undefined values - Firestore doesn't allow them
-  const cleanUpdates: any = {};
+  const cleanUpdates: Record<string, unknown> = {};
   Object.entries(updates).forEach(([key, value]) => {
     if (value !== undefined) {
       cleanUpdates[key] = value;

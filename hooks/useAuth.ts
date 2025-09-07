@@ -71,6 +71,6 @@ export const useAuth = (): UseAuthReturn => {
     isMissionary: isLoadingComplete && role === "missionary",
     isMember: isLoadingComplete && (role === "member" || role === null),
     needsOnboarding:
-      isLoadingComplete && user && userData?.onboardingCompleted === false,
+      isLoadingComplete && !!user && userData?.onboardingCompleted === false,
   };
 };
