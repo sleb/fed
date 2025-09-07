@@ -1,141 +1,129 @@
 # Missionary Dinner Coordination System
 
-A modern web application to help local congregations coordinate and manage dinner schedules for missionaries. Built with Next.js, Firebase, and Tailwind CSS for a seamless user experience.
+A modern web application built with Next.js and Firebase that streamlines dinner coordination between ward members and missionary companionships.
 
 ## 🎯 Project Overview
 
-This application streamlines the process of organizing meals for missionaries by providing:
+This system replaces manual dinner coordination with an intuitive digital solution where:
 
-- **Easy signup system** for congregation members to volunteer for dinner slots
-- **Companionship-based organization** - meals are scheduled for missionary companionships (2-3 missionaries serving together in an area)
-- **Individual missionary profiles** with personal contact info, dietary restrictions and preferences
-- **Smart companionship management** with validation and status tracking
-- **Real-time availability tracking** with automatic slot assignment
-- **Role-based access control** for members and administrators
-- **Mobile-first responsive design** for accessibility on all devices
+- **Ward members** can view available dinner slots and sign up to host missionaries
+- **Missionary companionships** have flexible schedules based on their availability
+- **Administrators** manage companionships, missionaries, and generate dinner slots
+- **Everyone** benefits from clear dietary information and seamless communication
+
+The system prioritizes user experience with role-based interfaces, comprehensive dietary information display, and streamlined signup processes.
 
 ## ✅ Current Status - **FUNCTIONAL MVP**
 
-The core application is **fully operational** with the following completed features:
+The system is fully functional and ready for production use with all core features implemented.
 
 ### 🔐 Authentication & User Management
 
-- **Google OAuth integration** for secure, passwordless authentication
-- **Role-based access control** (Member, Admin, Missionary roles)
-- **Automatic user document creation** with preferences
-- **Secure redirect flows** based on user permissions
+- ✅ Google OAuth integration with Firebase Auth
+- ✅ Role-based access control (Member, Admin)
+- ✅ Automatic user document creation
+- ✅ Protected routes with seamless redirects
+- ✅ Development-friendly admin setup
 
 ### 👥 User Interfaces
 
-- **Responsive Navigation** - Desktop header with dropdown menus and mobile hamburger menu with role-based visibility
-- **Landing Page** (`/`) - Welcome page with features overview and role-based action buttons
-- **Member Calendar** (`/calendar`) - Protected visual calendar interface for viewing and signing up for dinner slots
-- **Admin Dashboard** (`/admin`) - Protected admin-only database management and central navigation hub
-- **Missionary Management** (`/admin/missionaries`) - Protected admin tools for creating and managing missionary records
-- **Companionship Management** (`/admin/companionships`) - Protected admin interface for managing companionships with validation
-- **Calendar Management** (`/admin/calendar`) - Protected admin tools for creating and managing dinner calendars and schedules
-- **Login Flow** (`/login`) - Google authentication with automatic role-based redirects to appropriate pages
+- ✅ **Member Calendar**: Clean monthly view with available dinner slots
+- ✅ **Signup Flow**: Simplified form with missionary dietary information display
+- ✅ **Admin Dashboard**: Comprehensive management tools
+- ✅ **Companionship Management**: Create and manage missionary companionships with flexible schedules
+- ✅ **Slot Generation**: Automated dinner slot creation based on companionship availability
+- ✅ **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ### 📊 Data Management
 
-- **Calendar-based scheduling** - visual month-by-month dinner coordination system
-- **Companionship-focused organization** - one dinner slot per day per companionship (simplified scheduling)
-- **Individual missionary profiles** with personal contact info, dietary restrictions, and preferences
-- **Full missionary CRUD operations** - create, edit, and manage missionary records through admin interface
-- **Smart missionary assignment** - visual interface for adding/removing missionaries from companionships
-- **Companionship validation** - visual warnings for incomplete companionships needing more members
-- **Aggregated allergy tracking** - automatically combines individual allergies for companionship dinner planning
-- **Calendar template system** - reusable schedule patterns for different companionships
-- **Auto-generated dinner slots** - bulk slot creation based on calendar schedules
-- **Real-time calendar updates** with visual availability indicators
+- ✅ **Real-time Updates**: Instant UI updates when slots are booked
+- ✅ **Comprehensive Dietary Info**: Allergies, preferences, and notes from missionaries
+- ✅ **Flexible Scheduling**: Each companionship sets their own available days
+- ✅ **Efficient Queries**: Optimized Firestore queries with proper indexing
+- ✅ **Data Validation**: Form validation and error handling
+- ✅ **Seeding System**: Easy database population for testing
 
 ### 🎨 User Experience
 
-- **Modern navigation system** - responsive header with role-based menus and mobile hamburger navigation
-- **Automatic route protection** - seamless auth flow with appropriate redirects based on user role
-- **Intuitive calendar interface** - familiar month-view layout for easy navigation
-- **Color-coded availability** - visual indicators for available, taken, and user's own signups
-- **One-click signup** - simple interaction model for dinner slot booking
-- **Professional church-appropriate design** with shadcn/ui components
-- **Tailwind CSS v4** for modern styling and responsive layouts
-- **Loading states and error handling** throughout the application
-- **Search and filter functionality** for missionary selection and management
-- **Clear user authentication status** - visible sign-in/sign-out states with user profile information
+- ✅ **Intuitive Calendar Interface**: Color-coded slots (Available, Assigned, Your Signups)
+- ✅ **Smart Information Display**: Shows relevant dietary information without overwhelming users
+- ✅ **Clean Signup Process**: Members can't edit missionary count, focus on their own notes
+- ✅ **Visual Status Indicators**: Clear visual feedback for all actions
+- ✅ **Error Handling**: Graceful error messages and recovery
+- ✅ **Loading States**: Smooth loading indicators throughout the app
+- ✅ **Debug Tools**: Built-in debugging for development
+- ✅ **Mobile Responsive**: Fully functional on all device sizes
 
 ## 🛠 Tech Stack
 
 ### Frontend
 
-- **Next.js 15** - React framework with App Router and Turbopack
-- **TypeScript** - Full type safety throughout the application
-- **Tailwind CSS v4** - Modern utility-first CSS framework
-- **shadcn/ui** - High-quality, accessible UI components
-- **Lucide React** - Beautiful, consistent icons
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Radix UI Components** - Accessible component library
+- **Lucide Icons** - Beautiful icon library
 
 ### Backend & Database
 
-- **Firebase v12** - Complete backend-as-a-service solution
-  - **Firestore** - NoSQL database with real-time synchronization
-  - **Firebase Authentication** - Google OAuth integration
-  - **Security Rules** - Server-side access control and data protection
-  - **Firebase Emulator Suite** - Local development environment
+- **Firebase Firestore** - NoSQL database with real-time updates
+- **Firebase Authentication** - Google OAuth integration
+- **Firebase Emulator Suite** - Local development environment
 
 ### Development Tools
 
-- **ESLint** - Code linting and quality enforcement
-- **TypeScript** - Static type checking
-- **Firebase CLI** - Deployment and emulator management
+- **ESLint & Prettier** - Code formatting and linting
+- **Firebase CLI** - Database management and deployment
+- **VS Code** - Recommended IDE with TypeScript support
 
 ## 🗃 Database Schema
 
 ### Collections
 
-> **Note**: The database uses a companionship-based model where missionaries are grouped by service area (2-3 per companionship). Companionship display names are auto-generated from assigned missionary names (e.g., "Elder Smith & Elder Johnson"). Each companionship has one shared phone number, while individual missionaries have their own email addresses.
-
-**users**
+#### `users`
 
 ```typescript
 {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: 'member' | 'admin' | 'missionary';
+  id: string; // Firebase Auth UID
+  name: string; // Display name
+  email: string; // Email address
+  role: "member" | "admin";
   createdAt: Date;
   lastLoginAt: Date;
   preferences: {
     emailNotifications: boolean;
     smsNotifications: boolean;
-  };
+  }
 }
 ```
 
-**missionaries**
+#### `missionaries`
 
 ```typescript
 {
   id: string;
   name: string;
-  email?: string; // Individual email addresses
-  dinnerPreferences?: string[];
-  allergies?: string[];
-  notes?: string;
+  email?: string;
+  dinnerPreferences: string[];  // ["Italian", "Vegetarian", "BBQ"]
+  allergies: string[];          // ["Nuts", "Shellfish", "Dairy"]
+  notes?: string;               // "Vegetarian, prefers simple meals"
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
-**companionships**
+#### `companionships`
 
 ```typescript
 {
   id: string;
-  area: string; // Primary identifier - service area
+  area: string;                 // "Downtown", "Northside"
   address: string;
   apartmentNumber?: string;
-  phone: string; // Shared phone number for the companionship
-  missionaryIds: string[]; // Array of missionary IDs (2-3 missionaries)
+  phone: string;                // Shared companionship phone
+  missionaryIds: string[];      // References to missionaries
+  daysOfWeek: number[];         // [0,1,2,3,4,5,6] - Days available for dinner
   notes?: string;
   isActive: boolean;
   createdAt: Date;
@@ -143,64 +131,28 @@ The core application is **fully operational** with the following completed featu
 }
 ```
 
-**dinnerSlots**
-**dinnerSlots**
-
-```typescript
-{
-  id: string;
-  companionshipId: string; // References companionship directly
-  date: Date;
-  dayOfWeek: string;
-  status: 'available' | 'assigned' | 'completed' | 'cancelled';
-  assignedUserId?: string;
-  assignedUserName?: string;
-  assignedUserEmail?: string;
-  assignedUserPhone?: string;
-  specialRequests?: string;
-  guestCount: number; // Number of missionaries in companionship (usually 2)
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
-}
-```
-
-**calendarTemplates**
-
-```typescript
-{
-  id: string;
-  name: string;
-  description?: string;
-  daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. [1,2,3,4,5,6] = Mon-Sat
-  isDefault: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
-}
-```
-
-**companionshipCalendars**
+#### `dinnerSlots`
 
 ```typescript
 {
   id: string;
   companionshipId: string;
-  name: string;
-  description?: string;
-  daysOfWeek: number[]; // Days when dinner slots are available
-  startDate: Date;
-  endDate?: Date; // Optional: null means ongoing
-  isActive: boolean;
+  date: Date;
+  dayOfWeek: string;           // "Monday", "Tuesday", etc.
+  status: "available" | "assigned" | "completed" | "cancelled";
+  assignedUserId?: string;
+  assignedUserName?: string;
+  assignedUserEmail?: string;
+  assignedUserPhone?: string;
+  guestCount: number;          // Number of missionaries (usually 2)
+  notes?: string;              // Slot-specific notes
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
 }
 ```
 
-**signups**
+#### `signups`
 
 ```typescript
 {
@@ -210,15 +162,14 @@ The core application is **fully operational** with the following completed featu
   userEmail: string;
   userPhone?: string;
   dinnerSlotId: string;
-  missionaryId: string;
-  missionaryName: string; // Auto-generated companionship display name
+  missionaryId: string;        // For compatibility
+  missionaryName: string;      // Companionship display name
   dinnerDate: Date;
   guestCount: number;
-  status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
-  specialRequests?: string;
-  contactPreference: 'email' | 'phone' | 'both';
+  status: "confirmed" | "pending" | "cancelled" | "completed";
+  contactPreference: "email" | "phone" | "both";
   reminderSent: boolean;
-  notes?: string;
+  notes?: string;              // Member's notes for missionaries
   createdAt: Date;
   updatedAt: Date;
 }
@@ -229,327 +180,232 @@ The core application is **fully operational** with the following completed featu
 ```
 fed/
 ├── app/                          # Next.js App Router
-│   ├── (auth)/                   # Public authentication routes
-│   │   └── login/                # Google OAuth login page
-│   ├── (protected)/              # Protected route group (requires authentication)
-│   │   ├── layout.tsx            # Authentication protection wrapper
-│   │   ├── calendar/             # Member calendar and signup interface
-│   │   └── admin/                # Admin route group (requires admin role)
-│   │       ├── layout.tsx        # Admin role protection wrapper
-│   │       ├── page.tsx          # Admin dashboard
-│   │       ├── calendar/         # Calendar management tools
-│   │       ├── companionships/   # Companionship management
-│   │       └── missionaries/     # Missionary management
-│   ├── globals.css               # Global styles and Tailwind config
-│   ├── layout.tsx               # Root layout with header navigation
-│   └── page.tsx                 # Landing page
-├── components/                   # Reusable React components
-│   ├── auth/                    # Authentication components
-│   │   └── ProtectedRoute.tsx   # Route protection components
-│   ├── layout/                  # Layout components
-│   │   └── Header.tsx           # Main navigation header
-│   └── ui/                      # shadcn/ui component library
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── dialog.tsx
-│       ├── input.tsx
-│       ├── label.tsx
-│       ├── select.tsx
-│       ├── textarea.tsx
-│       └── badge.tsx
-├── hooks/                       # Custom React hooks
-│   ├── useAuth.ts              # Authentication state management
-│   └── useSignups.ts           # Signup and slot management
-├── lib/                        # Utility functions and configurations
-│   ├── firebase/               # Firebase setup and utilities
-│   │   ├── config.ts          # Firebase initialization
-│   │   ├── auth.ts            # Authentication helpers
-│   │   ├── signups.ts         # Database operations for signups
-│   │   └── seedData.ts        # Test data generation
-│   └── utils.ts               # General utility functions
-├── types/                      # TypeScript type definitions
-│   └── index.ts               # Core application types
-├── firebase.json              # Firebase project configuration
-├── firestore.rules           # Firestore security rules
-└── postcss.config.js         # PostCSS configuration for Tailwind v4
+│   ├── (auth)/                   # Authentication routes
+│   │   └── login/
+│   ├── (protected)/              # Protected routes requiring auth
+│   │   ├── admin/                # Admin-only pages
+│   │   │   ├── companionships/   # Manage companionships
+│   │   │   ├── missionaries/     # Manage missionaries
+│   │   │   ├── calendar/         # Generate dinner slots
+│   │   │   └── page.tsx          # Admin dashboard
+│   │   └── calendar/             # Member calendar view
+│   ├── globals.css               # Global styles
+│   ├── layout.tsx                # Root layout
+│   └── page.tsx                  # Landing page
+├── components/                   # Reusable UI components
+│   ├── ui/                       # Base UI components
+│   └── AdminRoute.tsx            # Admin route protection
+├── hooks/                        # Custom React hooks
+│   └── useAuth.ts                # Authentication hook
+├── lib/                          # Utility libraries
+│   └── firebase/                 # Firebase integration
+│       ├── auth.ts               # Authentication functions
+│       ├── calendar.ts           # Calendar utilities
+│       ├── config.ts             # Firebase configuration
+│       ├── firestore.ts          # Database operations
+│       └── seedData.ts           # Database seeding
+├── types/                        # TypeScript type definitions
+│   └── index.ts                  # Main types file
+├── firestore.rules               # Firestore security rules
+├── firestore.indexes.json        # Database indexes
+├── firebase.json                 # Firebase configuration
+└── next.config.ts                # Next.js configuration
 ```
 
-## 🧭 Navigation & Authentication
+## 🧭 Navigation & User Experience
 
 ### **Modern Navigation System**
 
-The application features a responsive navigation system with:
-
-- **Desktop Header**: Logo, main navigation links, and user dropdown menu
-- **Mobile Navigation**: Hamburger menu with slide-out drawer
-- **Role-Based Access**: Navigation links appear based on user permissions
-- **Authentication Status**: Clear indication of signed-in/signed-out state
-
-### **Route Protection Architecture**
-
-Instead of manual authentication checks in every component, the app uses a modern route protection pattern:
-
-```typescript
-// Automatic protection via route groups and layouts
-app / protected / layout.tsx; // Requires authentication
-app / protected / admin / layout.tsx; // Requires admin role
-```
-
-**Benefits:**
-
-- ✅ **No manual auth checks** needed in page components
-- ✅ **Impossible to forget** protection on new pages
-- ✅ **Centralized auth logic** - easy to maintain and test
-- ✅ **Automatic redirects** based on user role and authentication status
+- **Role-based routing** - Users automatically see appropriate interfaces
+- **Protected routes** - Authentication and authorization handled automatically
+- **Seamless redirects** - Users always land where they should be
+- **Responsive design** - Clean interface across all devices
 
 ### **User Experience Flow**
 
-1. **Unauthenticated users** → Redirected to `/login`
-2. **Regular members** → Land on `/calendar` (main signup interface)
-3. **Admin users** → Land on `/admin` (dashboard and management tools)
-4. **Non-admin accessing admin pages** → Redirected to `/calendar`
+**For Members:**
+
+1. Sign in with Google → Automatically redirected to calendar
+2. Browse available dinner slots in clean monthly view
+3. Click on green (available) slots to see signup form
+4. View comprehensive missionary dietary information (allergies, preferences, notes)
+5. Add personal phone and notes, then sign up
+6. See slot turn blue to indicate successful signup
+
+**For Admins:**
+
+1. Sign in → Access admin dashboard with setup tools
+2. Create companionships with flexible day-of-week schedules
+3. Manage individual missionaries with dietary preferences
+4. Generate dinner slots automatically or for specific companionships
+5. Monitor signups and manage the system
 
 ## 🔒 Security & Design Decisions
 
 ### Route Protection Architecture
 
-**Decision: Layout-Based Route Protection with Route Groups**
-
-**Implementation:**
-
-- **Route Groups** - `(protected)` and `(admin)` organize pages by access level
-- **Layout Components** - `ProtectedRoute` and `AdminRoute` handle auth automatically
-- **Centralized Logic** - All authentication/authorization in reusable components
-
-**Benefits:**
-
-- **No manual auth checks** - impossible to forget protection on new pages
-- **Maintainable** - auth logic changes in one place affect all routes
-- **Type-safe** - TypeScript ensures proper role-based access
-- **Performance** - layout-level protection is more efficient than per-page checks
-
-**Security Guarantees:**
-
-- All routes in `(protected)/` require authentication
-- All routes in `(protected)/admin/` require admin role
-- Automatic redirects prevent unauthorized access
-- Loading states prevent content flashing
+- **Public Routes**: Landing page and login only
+- **Protected Routes**: All functionality requires authentication
+- **Admin Routes**: Administrative functions require admin role
+- **Role Assignment**: Self-service admin promotion for development
+- **Data Isolation**: Users can only modify their own signups
 
 ### Authentication Strategy
 
-**Decision: Google OAuth Only (No Email/Password)**
-
-**Rationale:**
-
-- **Simplified UX** - No password management for users
-- **Enhanced Security** - Leverage Google's robust authentication
-- **Reduced Complexity** - No password reset flows or email verification
-- **Church Context** - Most members already have Google accounts
-- **Mobile Friendly** - Seamless experience across devices
+- **Google OAuth Only**: Simplified, secure authentication
+- **Automatic User Creation**: User documents created on first login
+- **Role-Based Access**: Flexible permission system
+- **Session Management**: Firebase handles all session complexity
 
 ### Data Access Control
 
-- **Firestore Security Rules** enforce server-side access control
-- **Role-based permissions** prevent unauthorized access to admin features
-- **Users can only manage their own signups** and view necessary missionary info
-- **Client-side role checks for UX**, server-side enforcement via Firebase rules
+- **Firestore Security Rules**: Comprehensive data protection
+- **User Data Isolation**: Users can only access/modify their own data
+- **Admin Oversight**: Admins can read all data but users control their signups
+- **Real-time Updates**: Optimistic UI with real-time data sync
 
 ### User Experience Principles
 
-- **Mobile-first design** for accessibility in all environments
-- **Progressive enhancement** with loading states and error handling
-- **Real-time updates** to prevent double-booking and conflicts
-- **Intuitive navigation** with clear role-based interfaces
+- **Simplified Signup**: Members focus on their role, not system complexity
+- **Clear Information Hierarchy**: Important info (allergies) prominently displayed
+- **No Data Confusion**: Missionaries provide dietary info, members add logistics notes
+- **Visual Feedback**: Color-coded slots, loading states, and clear error messages
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Firebase CLI (`npm install -g firebase-tools`)
-- Firebase project with Authentication and Firestore enabled
+- Firebase CLI: `npm install -g firebase-tools`
+- Google account for Firebase project
 
 ### Installation
 
-1. **Clone and install dependencies**
+1. **Clone the repository**
 
 ```bash
-git clone <repository-url>
+git clone [repository-url]
 cd fed
 npm install
 ```
 
-2. **Set up Firebase**
+2. **Set up Firebase project**
 
 ```bash
 # Login to Firebase
 firebase login
 
-# Initialize Firebase (select existing project)
-firebase use --add
+# Initialize Firebase (if not already done)
+firebase init
 
-# Start emulators for local development
-firebase emulators:start
+# Select:
+# - Firestore
+# - Authentication
+# - Emulators (Firestore, Authentication)
 ```
 
-3. **Configure environment variables**
-
-For local development with emulators, create a single dummy secret:
-
-1. **Get your Firebase configuration** from Firebase Console → Project Settings → General → Your apps
-
-2. **Create the dummy secret** for development:
+3. **Configure environment**
 
 ```bash
-firebase apphosting:secrets:set APPHOSTING_DUMMY_SECRET
+# Create .env.local with your Firebase config
+cp .env.example .env.local
+# Add your Firebase configuration variables
 ```
 
-When prompted, enter any placeholder value (e.g., "dummy-dev-config"). The actual Firebase configuration values don't matter for local development since the emulators will handle authentication and database operations.
-
-3. **Grant access to the secret**:
+4. **Start development servers**
 
 ```bash
-firebase apphosting:secrets:grantaccess APPHOSTING_DUMMY_SECRET
+# Terminal 1: Start Firebase Emulators
+npm run emulator
+
+# Terminal 2: Start Next.js dev server
+npm run dev
 ```
 
-The `apphosting.emulator.yaml` is configured to use this single dummy secret for all environment variables. This approach keeps the development setup simple while maintaining the same structure as production.
+5. **Initialize the system**
 
-4. **Start development with emulators**
-
-```bash
-firebase emulators:start
-```
-
-This will start both Firebase emulators AND the Next.js development server.
-
-5. **Seed test data** (optional)
-
-- Visit `http://localhost:3000/admin` as an admin user
-- Click "Seed Test Data" to populate with sample missionaries and dinner slots
+- Open http://localhost:3000
+- Sign in with Google
+- Go to `/admin` and click "Make Me Admin"
+- Click "Seed Test Data" to populate the database
+- Go to `/calendar` to see the dinner slots
 
 ### Firebase Configuration
 
-**Required Firebase services:**
+Add these variables to your `.env.local`:
 
-- **Authentication** with Google OAuth provider enabled
-- **Firestore Database** with security rules deployed
-- **Firebase Emulator Suite** for local development
-
-**Environment Configuration:**
-
-This project uses different environment configurations for local vs production:
-
-- **Local Development**: Uses `apphosting.emulator.yaml` with a single `APPHOSTING_DUMMY_SECRET` for all environment variables (actual values don't matter since emulators handle everything)
-- **Production**: Uses `apphosting.yaml` with individual Google Cloud Secret Manager secrets for each Firebase configuration value
-
-**For Production Deployment:**
-
-Create individual secrets for each Firebase configuration value:
-
-```bash
-firebase apphosting:secrets:set GOOGLE_CLIENT_ID
-firebase apphosting:secrets:set FIREBASE_API_KEY
-firebase apphosting:secrets:set FIREBASE_AUTH_DOMAIN
-firebase apphosting:secrets:set FIREBASE_PROJECT_ID
-firebase apphosting:secrets:set FIREBASE_STORAGE_BUCKET
-firebase apphosting:secrets:set FIREBASE_MESSAGING_SENDER_ID
-firebase apphosting:secrets:set FIREBASE_APP_ID
 ```
-
-Each secret should contain only the corresponding value (not JSON). The `apphosting.yaml` file references these individual secrets for production security.
-
-**Firestore Security Rules:**
-The application includes comprehensive security rules that:
-
-- Allow users to read/write their own data
-- Restrict admin operations to admin users only
-- Prevent unauthorized access to missionary contact information
-- Enable users to manage their own signups while protecting others' data
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
+```
 
 ## 📋 Available Scripts
 
-```bash
-# Development
-firebase emulators:start    # Start Firebase emulators + Next.js dev server
-npm run build              # Build production application
-npm run start              # Start production server
-npm run lint               # Run ESLint
+- `npm run dev` - Start Next.js development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run emulator` - Start Firebase emulator suite
+- `npm run deploy` - Deploy to Firebase hosting (when configured)
 
-# Firebase
-firebase deploy                           # Deploy to Firebase App Hosting
-firebase deploy --only firestore:rules   # Deploy security rules only
-firebase apphosting:secrets:set SECRET_NAME  # Manage production secrets
+## 🎯 Features & Capabilities
+
+### For Ward Members
+
+- **Monthly Calendar View**: Clean interface showing all available dinner opportunities
+- **Smart Signup Process**: Can't accidentally change missionary count, focuses on member input
+- **Comprehensive Dietary Info**: See allergies, preferences, and special notes from missionaries
+- **Easy Management**: View and modify your own signups
+- **Mobile Friendly**: Works perfectly on phones and tablets
+
+### For Administrators
+
+- **Companionship Management**: Create companionships with custom schedules (any days of the week)
+- **Missionary Profiles**: Manage dietary preferences, allergies, and notes
+- **Flexible Slot Generation**: Create dinner slots automatically or for specific time periods
+- **Bulk Operations**: Generate slots for all companionships at once
+- **Data Oversight**: Monitor signups and system usage
+
+### For Missionaries
+
+- **Profile Management**: Set dietary preferences, allergies, and helpful notes
+- **Flexible Scheduling**: Companionships can be available any combination of days
+- **Automatic Information Sharing**: Dietary info automatically shown to potential hosts
+
+## 🚀 Deployment
+
+The system is ready for production deployment:
+
+1. **Production Firebase Project**
+
+```bash
+firebase use --add production
+firebase deploy
 ```
 
-## 🎯 Next Steps & Roadmap
+2. **Environment Configuration**
 
-### Phase 2: Enhanced Features (Completed ✅)
+- Update `.env.local` with production Firebase config
+- Configure custom domain if desired
 
-- [x] **Missionary Management Interface** - Full CRUD operations for missionary profiles
-  - ✅ Dedicated `/admin/missionaries` page for individual missionary management
-  - ✅ Admin interface for creating and editing missionary records
-  - ✅ Smart filtering (active/inactive/assigned/unassigned missionaries)
-  - ✅ Advanced search by name, email, allergies, and preferences
-  - ✅ Individual allergy and preference management with add/remove interface
-  - ✅ Assignment status tracking and companionship association display
-  - ✅ Mobile-friendly modal forms with comprehensive validation
-  - ✅ Statistics dashboard showing missionary distribution
+3. **Initial Setup**
 
-- [x] **Companionship Management Interface** - Advanced companionship operations
-  - ✅ Dedicated `/admin/companionships` page focused on companionship coordination
-  - ✅ Smart missionary-companionship assignment with visual interface
-  - ✅ Real-time filtering of available/assigned missionaries within companionship forms
-  - ✅ Action-needed-only badge system (hides badges for properly functioning companionships)
-  - ✅ Simplified companionship display names (missionary names only, area shown separately)
-  - ✅ Comprehensive companionship CRUD with address, phone, and notes management
-  - [ ] Soft delete with restore functionality (future enhancement)
-  - [ ] Area-based organization and autocomplete (future enhancement)
-
-- [x] **Calendar System** - Visual dinner coordination interface
-  - ✅ Member calendar view (`/calendar`) with month navigation and visual slot indicators
-  - ✅ Admin calendar management (`/admin/calendar`) for templates and companionship schedules
-  - ✅ Calendar template system for reusable schedule patterns
-  - ✅ Simplified scheduling model (one slot per day per companionship)
-  - ✅ Auto-generation of dinner slots based on calendar schedules
-  - ✅ Color-coded availability (available, taken, user signups)
-  - ✅ One-click signup and modification system
-  - ✅ Bulk calendar setup for all companionships
-- [ ] **Enhanced Calendar Features** - Advanced scheduling capabilities
-  - **Recurring patterns** - Set up repeating dinner schedules beyond basic day-of-week
-  - **Member feeding history** - Track which families have fed which companionships
-  - **Blackout dates** - Ability to skip holidays and special events
-  - **Custom time slots** - Option to add specific times for companionships that need them
-- [ ] **Calendar integration** - Google Calendar sync for dinner schedules
-- [ ] **Email notifications** - Automated reminders and confirmations
-- [ ] **Enhanced filtering** - Search by missionary name, dietary restrictions
-- [ ] **Mobile app** - Progressive Web App (PWA) features
-
-### Phase 3: Advanced Features (Future)
-
-- [ ] **Advanced Admin Tools** - Bulk operations, reporting, analytics dashboard
-- [ ] **Area Admin Permissions** - Role-based access for different administrative levels
-- [ ] **CSV Import/Export** - Bulk missionary data management
-- [ ] **Missionary Photos** - Profile pictures and visual identification
-- [ ] **Auto-deletion of Inactive Missionaries** - Automatically delete inactive missionaries after 30 days
-  - Show "Will be deleted in X days" countdown badges on inactive missionaries
-  - Email warnings to admins before deletion
-  - Option to extend or restore before deletion deadline
-- [ ] **SMS notifications** via Twilio integration
-- [ ] **Multi-language support** for diverse congregations
-- [ ] **Advanced analytics** - Signup patterns, member engagement metrics
-- [ ] **Export functionality** - Google Sheets integration for scheduling data
-- [ ] **Waitlist management** - Handle oversubscribed dinner slots
-- [ ] **Member participation tracking** - Analytics on dinner hosting patterns
+- Designate admin users
+- Create real companionships and missionaries
+- Generate initial dinner slots
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with proper TypeScript types
-4. Test with Firebase emulators
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and test thoroughly
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
 ## 📄 License
 
@@ -557,6 +413,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for missionary service coordination**
-
-> _"And behold, I tell you these things that ye may learn wisdom; that ye may learn that when ye are in the service of your fellow beings ye are only in the service of your God."_ - Mosiah 2:17
+**Built with ❤️ for missionary work and ward coordination**
