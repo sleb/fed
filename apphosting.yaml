@@ -1,12 +1,6 @@
-# Settings for Backend (on Cloud Run).
-# See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
-  # maxInstances: 100
-  # concurrency: 80
-  # cpu: 1
-  # memoryMiB: 512
-  #
+
 env:
   - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
     secret: GOOGLE_CLIENT_ID
@@ -22,17 +16,3 @@ env:
     secret: FIREBASE_MESSAGING_SENDER_ID
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     secret: FIREBASE_APP_ID
-# Environment variables and secrets.
-# env:
-# Configure environment variables.
-# See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
-# - variable: MESSAGE
-#   value: Hello world!
-#   availability:
-#     - BUILD
-#     - RUNTIME
-
-# Grant access to secrets in Cloud Secret Manager.
-# See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-# - variable: MY_SECRET
-#   secret: mySecretRef
