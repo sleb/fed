@@ -18,13 +18,25 @@ export interface UserData {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  address?: string;
   role: UserRole;
+  onboardingCompleted: boolean;
+  preferences: {
+    contactMethod: "email" | "sms" | "both";
+    signupReminders: boolean;
+    appointmentReminders: boolean;
+    changeNotifications: boolean;
+    reminderDaysBefore: number;
+  };
+  stats: {
+    totalSignups: number;
+    completedDinners: number;
+    cancelledDinners: number;
+    lastDinnerDate?: Date;
+  };
   createdAt: Date;
   lastLoginAt: Date;
-  preferences?: {
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-  };
 }
 
 // Google Auth Provider
@@ -67,13 +79,22 @@ export const createUserDocumentIfNotExists = async (
         id: user.uid,
         name: user.displayName || "Unknown User",
         email: user.email || "",
-        role: "member", // Default role for new users
+        role: "member",
+        onboardingCompleted: false,
+        preferences: {
+          contactMethod: "email",
+          signupReminders: true,
+          appointmentReminders: true,
+          changeNotifications: true,
+          reminderDaysBefore: 1,
+        },
+        stats: {
+          totalSignups: 0,
+          completedDinners: 0,
+          cancelledDinners: 0,
+        },
         createdAt: new Date(),
         lastLoginAt: new Date(),
-        preferences: {
-          emailNotifications: true,
-          smsNotifications: false,
-        },
       };
 
       console.log("💾 Saving user data:", userData);
@@ -117,6 +138,26 @@ export const updateUserRole = async (
   await setDoc(doc(db, "users", uid), { role }, { merge: true });
 };
 
+// Update user profile
+export const updateUserProfile = async (
+  uid: string,
+  updates: Partial<Omit<UserData, "id" | "createdAt">>,
+): Promise<void> => {
+  // Filter out undefined values - Firestore doesn't allow them
+  const cleanUpdates: any = {};
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value !== undefined) {
+      cleanUpdates[key] = value;
+    }
+  });
+
+  const updateData = {
+    ...cleanUpdates,
+    lastLoginAt: new Date(),
+  };
+  await setDoc(doc(db, "users", uid), updateData, { merge: true });
+};
+
 // Check if user is admin
 export const isAdmin = async (user: User): Promise<boolean> => {
   const userData = await getUserData(user.uid);
@@ -137,15 +178,18 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
 
-// Get redirect URL based on user role
+// Get redirect URL based on user role and onboarding status
 export const getRedirectPath = async (user: User): Promise<string> => {
   const userData = await getUserData(user.uid);
+
+  if (!userData?.onboardingCompleted) {
+    return "/onboarding";
+  }
 
   switch (userData?.role) {
     case "admin":
       return "/admin";
     case "missionary":
-      return "/calendar";
     case "member":
     default:
       return "/calendar";

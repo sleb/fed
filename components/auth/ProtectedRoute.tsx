@@ -20,7 +20,7 @@ export function ProtectedRoute({
   redirectTo,
   fallback = <ProtectedRouteFallback />,
 }: ProtectedRouteProps) {
-  const { user, userData, loading } = useAuth();
+  const { user, userData, loading, needsOnboarding } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,13 +32,32 @@ export function ProtectedRoute({
       return;
     }
 
+    // Handle onboarding requirement (but not on the onboarding page itself)
+    if (needsOnboarding && !window.location.pathname.includes("/onboarding")) {
+      router.replace("/onboarding");
+      return;
+    }
+
     // Handle role-based access
-    if (allowedRoles && userData?.role && !allowedRoles.includes(userData.role)) {
+    if (
+      allowedRoles &&
+      userData?.role &&
+      !allowedRoles.includes(userData.role)
+    ) {
       const defaultRedirect = getDefaultRedirectForRole(userData.role);
       router.replace(redirectTo || defaultRedirect);
       return;
     }
-  }, [user, userData, loading, requireAuth, allowedRoles, redirectTo, router]);
+  }, [
+    user,
+    userData,
+    loading,
+    needsOnboarding,
+    requireAuth,
+    allowedRoles,
+    redirectTo,
+    router,
+  ]);
 
   // Show fallback while loading or redirecting
   if (loading) {
@@ -81,7 +100,10 @@ function getDefaultRedirectForRole(role: UserRole): string {
 }
 
 // Convenience wrapper components
-export function AdminRoute({ children, ...props }: Omit<ProtectedRouteProps, 'allowedRoles'>) {
+export function AdminRoute({
+  children,
+  ...props
+}: Omit<ProtectedRouteProps, "allowedRoles">) {
   return (
     <ProtectedRoute allowedRoles={["admin"]} {...props}>
       {children}
@@ -89,7 +111,10 @@ export function AdminRoute({ children, ...props }: Omit<ProtectedRouteProps, 'al
   );
 }
 
-export function AuthenticatedRoute({ children, ...props }: Omit<ProtectedRouteProps, 'requireAuth'>) {
+export function AuthenticatedRoute({
+  children,
+  ...props
+}: Omit<ProtectedRouteProps, "requireAuth">) {
   return (
     <ProtectedRoute requireAuth={true} {...props}>
       {children}

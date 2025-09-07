@@ -194,14 +194,16 @@ async function seedDatabase() {
         updatedAt: admin.firestore.Timestamp.now(),
       };
 
-      const docRef = await db.collection("companionships").add(companionshipData);
+      const docRef = await db
+        .collection("companionships")
+        .add(companionshipData);
       companionshipIds.push(docRef.id);
       console.log(
-        `✅ Created companionship: ${companionshipTemplate.area} Area (${docRef.id}) with ${missionaryIds.length} missionaries`
+        `✅ Created companionship: ${companionshipTemplate.area} Area (${docRef.id}) with ${missionaryIds.length} missionaries`,
       );
     }
 
-    // Step 3: Create a sample admin user
+    // Step 3: Create sample admin user (completed onboarding)
     console.log("👤 Creating sample admin user...");
     const adminUserId = "admin-user-123";
     const adminUserData = {
@@ -210,9 +212,12 @@ async function seedDatabase() {
       phone: "(555) 000-0000",
       address: "123 Admin St",
       role: "admin",
+      onboardingCompleted: true,
       preferences: {
-        emailNotifications: true,
-        smsNotifications: true,
+        contactMethod: "both",
+        signupReminders: true,
+        appointmentReminders: true,
+        changeNotifications: true,
         reminderDaysBefore: 1,
       },
       stats: {
@@ -227,19 +232,20 @@ async function seedDatabase() {
     await db.collection("users").doc(adminUserId).set(adminUserData);
     console.log("✅ Created admin user");
 
-    // Step 4: Create a sample regular user
+    // Step 4: Create sample member user (needs onboarding)
     console.log("👤 Creating sample member user...");
     const memberUserId = "member-user-456";
     const memberUserData = {
       name: "Test Member",
       email: "member@test.com",
-      phone: "(555) 111-1111",
-      address: "456 Member Ave",
       role: "member",
+      onboardingCompleted: false,
       preferences: {
-        emailNotifications: true,
-        smsNotifications: false,
-        reminderDaysBefore: 2,
+        contactMethod: "email",
+        signupReminders: true,
+        appointmentReminders: true,
+        changeNotifications: true,
+        reminderDaysBefore: 1,
       },
       stats: {
         totalSignups: 0,
@@ -255,18 +261,23 @@ async function seedDatabase() {
 
     console.log("🎉 Database seeding completed successfully!");
     console.log(`📊 Summary:`);
-    console.log(`   - ${SAMPLE_MISSIONARIES.length} individual missionaries created`);
+    console.log(
+      `   - ${SAMPLE_MISSIONARIES.length} individual missionaries created`,
+    );
     console.log(`   - ${SAMPLE_COMPANIONSHIPS.length} companionships created`);
-    console.log(`   - 1 admin user created (ID: ${adminUserId})`);
-    console.log(`   - 1 member user created (ID: ${memberUserId})`);
+    console.log(
+      `   - 1 admin user created (ID: ${adminUserId}) - onboarding completed`,
+    );
+    console.log(
+      `   - 1 member user created (ID: ${memberUserId}) - needs onboarding`,
+    );
     console.log(`   - Dynamic slots enabled - no pre-generation needed`);
     console.log(`   - Ready for signups!`);
 
     console.log("\n📝 Next steps:");
-    console.log("   1. Go to the calendar page and try signing up for dinners");
-    console.log("   2. Test both admin and member functionality");
-    console.log("   3. Check that virtual slots are generated correctly");
-
+    console.log("   1. Sign in as Test Member to test onboarding flow");
+    console.log("   2. Sign in as Test Admin to access admin features");
+    console.log("   3. Test calendar and signup functionality");
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;

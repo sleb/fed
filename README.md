@@ -1,11 +1,14 @@
 # Missionary Dinner Coordination System
 
+> **⚠️ PRE-ALPHA SOFTWARE** - This is early-stage development software. Features may be incomplete, breaking changes will occur without notice, and data models may change. Not recommended for production use.
+
 A modern Next.js application for coordinating dinners between ward members and missionary companionships. Built with Firebase, TypeScript, and Tailwind CSS.
 
 ## ✨ Features
 
-- **🔐 Firebase Authentication**: Secure login with role-based access control
-- **👥 User Roles**: Admin, Missionary, and Member with appropriate permissions
+- **🔐 Firebase Authentication**: Secure login with Google OAuth
+- **👥 User Onboarding**: New user setup with contact preferences and notification settings
+- **👤 Role-Based Access**: Member and Admin roles with appropriate permissions
 - **📅 Dynamic Calendar**: Virtual slots generated from companionship schedules
 - **🍽️ Smart Dietary Management**: Comprehensive allergy and preference tracking
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile
@@ -13,11 +16,19 @@ A modern Next.js application for coordinating dinners between ward members and m
 
 ## 🎯 Core Concepts
 
+### User Onboarding Flow
+
+New users are automatically prompted to:
+
+- **Contact Information**: Phone number and address (optional)
+- **Notification Preferences**: Email, SMS, or both
+- **Notification Types**: Signup reminders, appointment reminders, change notifications
+- **Reminder Timing**: How many days before dinner to send reminders
+
 ### User Roles
 
-- **Members**: Sign up for dinner slots, view missionary dietary information
-- **Missionaries**: Maintain dietary preferences and contact information
-- **Admins**: Manage missionaries, companionships, and monitor signups
+- **Members**: Sign up for dinner slots, manage their profile and preferences
+- **Admins**: Manage missionaries, companionships, and monitor all signups
 
 ### Companionship Schedules
 
@@ -29,16 +40,45 @@ Each companionship has:
 
 ### Dynamic Slot System
 
-Instead of pre-creating empty slots in the database, the system:
+No pre-created database records for empty slots:
 
 - **Generates virtual slots** on-the-fly based on companionship schedules
 - **Shows availability** without database bloat
 - **Creates records** only when someone actually signs up
-- **Eliminates maintenance** - no need for admins to generate slots monthly
+- **Zero maintenance** - no admin slot generation needed
 
 ## 🏗 Data Model
 
 ### Core Collections
+
+#### `users`
+
+```typescript
+{
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  role: "member" | "admin";
+  onboardingCompleted: boolean;
+  preferences: {
+    contactMethod: "email" | "sms" | "both";
+    signupReminders: boolean;
+    appointmentReminders: boolean;
+    changeNotifications: boolean;
+    reminderDaysBefore: number;
+  };
+  stats: {
+    totalSignups: number;
+    completedDinners: number;
+    cancelledDinners: number;
+    lastDinnerDate?: Date;
+  };
+  createdAt: Date;
+  lastLoginAt: Date;
+}
+```
 
 #### `missionaries`
 
@@ -62,11 +102,12 @@ Instead of pre-creating empty slots in the database, the system:
 {
   id: string;
   area: string;
-  zone?: string;
-  district?: string;
-  phone?: string;
+  address: string;
+  apartmentNumber?: string;
+  phone: string;
   missionaryIds: string[];
   daysOfWeek: number[];          // 0=Sunday, 1=Monday, etc.
+  notes?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -92,7 +133,7 @@ Contains all slot information directly embedded:
   status: "confirmed" | "pending" | "cancelled" | "completed";
   contactPreference: "email" | "phone" | "both";
   reminderSent: boolean;
-  notes?: string;                // Member's notes for missionaries
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -126,13 +167,15 @@ fed/
 │   │   │   ├── companionships/   # Manage companionships
 │   │   │   ├── missionaries/     # Manage missionaries
 │   │   │   └── page.tsx          # Admin dashboard
-│   │   └── calendar/             # Member calendar view
+│   │   ├── calendar/             # Member calendar view
+│   │   └── onboarding/           # New user setup
 │   ├── globals.css               # Global styles
 │   ├── layout.tsx                # Root layout
 │   └── page.tsx                  # Landing page
 ├── components/                   # Reusable UI components
-│   ├── ui/                       # Base UI components
-│   └── AdminRoute.tsx            # Admin route protection
+│   ├── auth/                     # Authentication components
+│   ├── onboarding/               # User onboarding flow
+│   └── ui/                       # Base UI components
 ├── hooks/                        # Custom React hooks
 │   └── useAuth.ts                # Authentication hook
 ├── lib/                          # Utility libraries
@@ -142,35 +185,46 @@ fed/
 │       ├── config.ts             # Firebase config
 │       ├── firestore.ts          # Database operations
 │       └── seedData.ts           # Development data seeding
+├── scripts/                      # Utility scripts
+│   ├── debugEmulator.js          # Debug emulator database
+│   └── seedEmulator.js           # Seed test data
 ├── types/                        # TypeScript type definitions
 │   └── index.ts                  # All application types
 └── README.md                     # This file
 ```
 
-## 🎨 User Experience Highlights
+## 🎨 User Experience
+
+### New User Flow
+
+1. **Sign in with Google** - Automatic account creation
+2. **Onboarding** - Set contact info and notification preferences
+3. **Calendar Access** - Browse and sign up for dinner slots
 
 ### For Members
 
 - **Visual Calendar**: Color-coded slots (Available, Taken, Your Signups)
 - **Dietary Information**: Clear display of missionary allergies and preferences
-- **Simple Signup**: Phone, contact preference, and optional notes
-- **Easy Management**: Modify or cancel signups with one click
+- **Smart Validation**: Contact method validation (phone required for SMS)
+- **Profile Management**: Update preferences and contact info anytime
 
 ### For Administrators
 
 - **Zero Maintenance**: No slot generation needed
 - **Real-time Monitoring**: Dashboard shows upcoming signups
-- **Companionship Management**: Set schedules and missionary assignments
-- **Contact Overview**: Quick access to member and missionary information
-
-### Design Principles
-
-- **Information Hierarchy**: Members see dietary info but can't edit it
-- **Clear Responsibilities**: Members provide contact info and logistics notes
-- **Visual Feedback**: Color-coded slots, loading states, and clear error messages
-- **Mobile-First**: Responsive design works on all devices
+- **User Management**: View member profiles and contact preferences
+- **Data Seeding**: Development tools for testing
 
 ## 🔄 System Architecture Benefits
+
+### No Migration Needed
+
+```
+✅ Clean slate - no backward compatibility cruft
+✅ Modern data structures from day one
+✅ No legacy migration scripts
+✅ Pre-alpha freedom to iterate quickly
+```
 
 ### Dynamic Virtual Slots
 
@@ -190,17 +244,13 @@ fed/
 ✅ Better performance and scalability
 ```
 
-**Result**: Clean architecture with zero maintenance overhead for slot management.
-
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Firebase project with:
-  - Authentication enabled
-  - Firestore database
-  - Hosting (optional)
+- Firebase project with Authentication and Firestore enabled
+- Firebase CLI installed globally
 
 ### Installation
 
@@ -218,7 +268,10 @@ fed/
    # Create .env.local with your Firebase config
    NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   # ... other config values
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
    ```
 
 3. **Set up Firestore security rules**
@@ -227,89 +280,107 @@ fed/
    firebase deploy --only firestore:rules
    ```
 
-4. **Clear existing data (if upgrading)**
-
-   If you have existing data from an older version, clear the database first:
+4. **Start development with emulator**
 
    ```bash
-   # In Firebase Console, delete all documents from:
-   # - signups collection (old format incompatible)
-   # - dinnerSlots collection (no longer used)
-   ```
+   # Start Firebase emulators
+   firebase emulators:start
 
-5. **Seed development data**
-   ```bash
+   # In another terminal, seed test data
+   node scripts/seedEmulator.js seed
+
+   # Start Next.js development server
    npm run dev
-   # Navigate to /admin and run the database seeding function
    ```
 
-### Development
+### Development Commands
 
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run start        # Start production server
+
+# Emulator utilities
+node scripts/debugEmulator.js inspect    # Inspect database
+node scripts/debugEmulator.js clear      # Clear all data
+node scripts/seedEmulator.js seed        # Seed test data
 ```
 
 ## 🔒 Security
 
 ### Firestore Rules
 
-- Members can read/write their own signups
-- All users can read missionaries and companionships
+- Users can read/write their own data and signups
+- All authenticated users can read missionaries and companionships
 - Only admins can write missionaries and companionships
-- Authentication required for all operations
+- Onboarding page accessible to incomplete profiles
 
 ### Route Protection
 
 - `/admin/*` routes require admin role
-- All protected routes require authentication
-- Client-side and server-side role validation
+- `/onboarding` requires authentication but bypasses completion check
+- All other protected routes require completed onboarding
+- Client-side and server-side validation
+
+## ⚠️ Pre-Alpha Limitations
+
+- **Breaking Changes**: Data models may change without migration paths
+- **Missing Features**: Many planned features are not yet implemented
+- **Limited Testing**: Minimal test coverage, bugs expected
+- **Data Loss Risk**: Database schemas may be reset during development
+- **No Production Support**: Not suitable for production deployment
 
 ## 🎯 Development Roadmap
 
-### Phase 1: Core Functionality ✅
+### Phase 1: Core Functionality (Current)
 
 - [x] Authentication and authorization
+- [x] User onboarding flow
 - [x] Missionary and companionship management
 - [x] Dynamic calendar with virtual slots
-- [x] Signup creation and management
+- [x] Basic signup functionality
 - [x] Admin dashboard
 
 ### Phase 2: Enhanced Features
 
-- [ ] Email notifications for signups
-- [ ] SMS reminders (optional)
-- [ ] Recurring dinner preferences
-- [ ] Calendar export functionality
-- [ ] Missionary feedback system
+- [ ] Email/SMS notifications
+- [ ] Reminder system implementation
+- [ ] Member profile editing
+- [ ] Signup modification and cancellation
+- [ ] Enhanced admin tools
 
-### Phase 3: Scaling
+### Phase 3: Polish & Scale
 
-- [ ] Multi-ward support
+- [ ] Complete notification system
 - [ ] Advanced reporting
-- [ ] Mobile app (React Native)
-- [ ] Integration with ward systems
+- [ ] Error handling and recovery
+- [ ] Performance optimization
+- [ ] Production deployment guides
 
 ## 🛠 Technology Stack
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS v4
 - **Backend**: Firebase (Auth + Firestore)
-- **UI Components**: Custom components with shadcn/ui
-- **State Management**: React hooks and context
-- **Deployment**: Vercel or Firebase Hosting
+- **UI Components**: Custom components with Radix UI primitives
+- **Development**: Firebase Emulator Suite
+- **Deployment**: Firebase App Hosting
 
 ## 📝 Contributing
 
-1. Follow TypeScript best practices
-2. Use conventional commits
-3. Add tests for new features
-4. Update documentation as needed
+Since this is pre-alpha software:
+
+1. Expect breaking changes frequently
+2. No formal contribution process yet
+3. Focus on core functionality over polish
+4. Document architectural decisions
+5. Keep dependencies minimal
 
 ## 📄 License
 
 MIT License - see LICENSE file for details
 
 ---
+
+⚠️ **Remember**: This is pre-alpha software. Use at your own risk and expect significant changes.
 
 Built with ❤️ for missionary work coordination

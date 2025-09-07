@@ -52,9 +52,12 @@ export interface UserProfile {
   phone?: string;
   address?: string;
   role: "member" | "admin" | "missionary";
+  onboardingCompleted: boolean;
   preferences: {
-    emailNotifications: boolean;
-    smsNotifications: boolean;
+    contactMethod: "email" | "sms" | "both";
+    signupReminders: boolean;
+    appointmentReminders: boolean;
+    changeNotifications: boolean;
     reminderDaysBefore: number;
   };
   stats?: {
@@ -106,6 +109,17 @@ export type FirestoreTimestamp = {
   seconds: number;
   nanoseconds: number;
 };
+
+// Onboarding form data
+export interface OnboardingFormData {
+  phone?: string;
+  address?: string;
+  contactMethod: "email" | "sms" | "both";
+  signupReminders: boolean;
+  appointmentReminders: boolean;
+  changeNotifications: boolean;
+  reminderDaysBefore: number;
+}
 
 // Utility types for API responses
 export interface ApiResponse<T> {

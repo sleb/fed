@@ -18,6 +18,7 @@ export interface UseAuthReturn {
   isAdmin: boolean;
   isMissionary: boolean;
   isMember: boolean;
+  needsOnboarding: boolean;
 }
 
 export const useAuth = (): UseAuthReturn => {
@@ -69,5 +70,7 @@ export const useAuth = (): UseAuthReturn => {
     isAdmin: isLoadingComplete && role === "admin",
     isMissionary: isLoadingComplete && role === "missionary",
     isMember: isLoadingComplete && (role === "member" || role === null),
+    needsOnboarding:
+      isLoadingComplete && user && userData?.onboardingCompleted === false,
   };
 };
