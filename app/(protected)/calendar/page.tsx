@@ -90,7 +90,6 @@ export default function CalendarPage() {
 
   // Form state
   const [signupForm, setSignupForm] = useState({
-    specialRequests: "",
     userPhone: "",
     contactPreference: "email" as "email" | "phone" | "both",
     notes: "",
@@ -306,6 +305,31 @@ export default function CalendarPage() {
     return [...new Set(allAllergies)].sort();
   };
 
+  const getAggregatedPreferences = (companionship: Companionship) => {
+    const companionshipMissionaries = companionship.missionaryIds
+      .map((id) => missionaries.get(id))
+      .filter(Boolean)
+      .filter((m) => m!.isActive);
+
+    const allPreferences = companionshipMissionaries
+      .flatMap((m) => m!.dinnerPreferences || [])
+      .filter(Boolean);
+
+    return [...new Set(allPreferences)].sort();
+  };
+
+  const getMissionaryNotes = (companionship: Companionship) => {
+    const companionshipMissionaries = companionship.missionaryIds
+      .map((id) => missionaries.get(id))
+      .filter(Boolean)
+      .filter((m) => m!.isActive);
+
+    return companionshipMissionaries
+      .map((m) => m!.notes)
+      .filter(Boolean)
+      .filter((note) => note!.trim().length > 0);
+  };
+
   const getUserSignupForSlot = (slot: DinnerSlot) => {
     return userSignups.find(
       (signup) =>
@@ -321,7 +345,6 @@ export default function CalendarPage() {
       setSelectedSignup(existingSignup);
       setSelectedSlot(slot);
       setSignupForm({
-        specialRequests: existingSignup.specialRequests || "",
         userPhone: existingSignup.userPhone || "",
         contactPreference: existingSignup.contactPreference,
         notes: existingSignup.notes || "",
@@ -331,7 +354,6 @@ export default function CalendarPage() {
       // Slot is available for signup
       setSelectedSlot(slot);
       setSignupForm({
-        specialRequests: "",
         userPhone: user?.phoneNumber || "",
         contactPreference: "email",
         notes: "",
@@ -353,7 +375,6 @@ export default function CalendarPage() {
       const signupData = {
         dinnerSlotId: selectedSlot.id,
         guestCount: selectedSlot.guestCount, // Use the slot's missionary count
-        specialRequests: signupForm.specialRequests,
         userPhone: signupForm.userPhone,
         contactPreference: signupForm.contactPreference,
         notes: signupForm.notes,
@@ -379,7 +400,6 @@ export default function CalendarPage() {
         assignedUserName: user.displayName || user.email || "Unknown",
         assignedUserEmail: user.email || "",
         assignedUserPhone: signupForm.userPhone,
-        specialRequests: signupForm.specialRequests,
       });
 
       setShowSignupModal(false);
@@ -400,7 +420,6 @@ export default function CalendarPage() {
     try {
       await SignupService.updateSignup(selectedSignup.id, {
         guestCount: selectedSlot.guestCount, // Use the slot's missionary count
-        specialRequests: signupForm.specialRequests,
         userPhone: signupForm.userPhone,
         contactPreference: signupForm.contactPreference,
         notes: signupForm.notes,
@@ -410,7 +429,6 @@ export default function CalendarPage() {
       // Update slot with new details
       await DinnerSlotService.updateDinnerSlot(selectedSlot.id, {
         assignedUserPhone: signupForm.userPhone,
-        specialRequests: signupForm.specialRequests,
       });
 
       setShowModifyModal(false);
@@ -442,7 +460,6 @@ export default function CalendarPage() {
         assignedUserName: undefined,
         assignedUserEmail: undefined,
         assignedUserPhone: undefined,
-        specialRequests: undefined,
       });
 
       setShowModifyModal(false);
@@ -800,21 +817,85 @@ export default function CalendarPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="special-requests">
-                    Special Requests or Dietary Notes
-                  </Label>
-                  <Textarea
-                    id="special-requests"
-                    value={signupForm.specialRequests}
-                    onChange={(e) =>
-                      setSignupForm({
-                        ...signupForm,
-                        specialRequests: e.target.value,
-                      })
-                    }
-                    placeholder="Any special dietary needs or requests..."
-                    rows={3}
-                  />
+                  <Label>Missionary Food Information</Label>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-3">
+                    {/* Allergies */}
+                    {getAggregatedAllergies(
+                      companionships.get(selectedSlot.companionshipId)!,
+                    ).length > 0 ? (
+                      <div>
+                        <p className="text-sm font-medium text-red-700 mb-1">
+                          ⚠️ Important Allergies:
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {getAggregatedAllergies(
+                            companionships.get(selectedSlot.companionshipId)!,
+                          ).map((allergy, index) => (
+                            <Badge
+                              key={index}
+                              variant="destructive"
+                              className="text-xs"
+                            >
+                              {allergy}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-green-700">
+                        ✅ No known allergies reported
+                      </p>
+                    )}
+
+                    {/* Preferences */}
+                    {getAggregatedPreferences(
+                      companionships.get(selectedSlot.companionshipId)!,
+                    ).length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-blue-700 mb-1">
+                          🍽️ Food Preferences:
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {getAggregatedPreferences(
+                            companionships.get(selectedSlot.companionshipId)!,
+                          ).map((preference, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {preference}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {getMissionaryNotes(
+                      companionships.get(selectedSlot.companionshipId)!,
+                    ).length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-1">
+                          📝 Additional Notes:
+                        </p>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          {getMissionaryNotes(
+                            companionships.get(selectedSlot.companionshipId)!,
+                          ).map((note, index) => (
+                            <li key={index} className="list-disc list-inside">
+                              {note}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-muted-foreground border-t pt-2">
+                      This information is provided by the missionaries. Please
+                      plan meals accordingly.
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -893,21 +974,90 @@ export default function CalendarPage() {
             </div>
 
             <div>
-              <Label htmlFor="modify-special-requests">
-                Special Requests or Dietary Notes
-              </Label>
-              <Textarea
-                id="modify-special-requests"
-                value={signupForm.specialRequests}
-                onChange={(e) =>
-                  setSignupForm({
-                    ...signupForm,
-                    specialRequests: e.target.value,
-                  })
-                }
-                placeholder="Any special dietary needs or requests..."
-                rows={3}
-              />
+              <Label>Missionary Food Information</Label>
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-3">
+                {selectedSlot &&
+                  companionships.get(selectedSlot.companionshipId) && (
+                    <>
+                      {/* Allergies */}
+                      {getAggregatedAllergies(
+                        companionships.get(selectedSlot.companionshipId)!,
+                      ).length > 0 ? (
+                        <div>
+                          <p className="text-sm font-medium text-red-700 mb-1">
+                            ⚠️ Important Allergies:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {getAggregatedAllergies(
+                              companionships.get(selectedSlot.companionshipId)!,
+                            ).map((allergy, index) => (
+                              <Badge
+                                key={index}
+                                variant="destructive"
+                                className="text-xs"
+                              >
+                                {allergy}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-green-700">
+                          ✅ No known allergies reported
+                        </p>
+                      )}
+
+                      {/* Preferences */}
+                      {getAggregatedPreferences(
+                        companionships.get(selectedSlot.companionshipId)!,
+                      ).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-blue-700 mb-1">
+                            🍽️ Food Preferences:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {getAggregatedPreferences(
+                              companionships.get(selectedSlot.companionshipId)!,
+                            ).map((preference, index) => (
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {preference}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {getMissionaryNotes(
+                        companionships.get(selectedSlot.companionshipId)!,
+                      ).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-1">
+                            📝 Additional Notes:
+                          </p>
+                          <ul className="text-sm text-gray-600 space-y-1">
+                            {getMissionaryNotes(
+                              companionships.get(selectedSlot.companionshipId)!,
+                            ).map((note, index) => (
+                              <li key={index} className="list-disc list-inside">
+                                {note}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground border-t pt-2">
+                        This information is provided by the missionaries. Please
+                        plan meals accordingly.
+                      </p>
+                    </>
+                  )}
+              </div>
             </div>
 
             <div>

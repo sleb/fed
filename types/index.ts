@@ -34,7 +34,6 @@ export interface DinnerSlot {
   assignedUserName?: string;
   assignedUserEmail?: string;
   assignedUserPhone?: string;
-  specialRequests?: string;
   guestCount: number; // Number of missionaries eating (usually 2)
   notes?: string;
   createdAt: Date;
@@ -54,7 +53,6 @@ export interface Signup {
   dinnerDate: Date;
   guestCount: number;
   status: "confirmed" | "pending" | "cancelled" | "completed";
-  specialRequests?: string;
   contactPreference: "email" | "phone" | "both";
   reminderSent: boolean;
   notes?: string;
@@ -87,7 +85,6 @@ export interface UserProfile {
 export interface SignupFormData {
   dinnerSlotId: string;
   guestCount: number;
-  specialRequests?: string;
   userPhone?: string;
   contactPreference: "email" | "phone" | "both";
   notes?: string;
