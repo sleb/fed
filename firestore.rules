@@ -24,23 +24,6 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Dinner slots collection - authenticated users can read and update for signups
-    match /dinnerSlots/{slotId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      // Allow users to update slots for signups (status, assignment, etc.)
-      allow update: if request.auth != null && (
-        // Admins can update anything
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        // Users can sign up for available slots
-        (resource.data.status == 'available' &&
-         request.resource.data.assignedUserId == request.auth.uid) ||
-        // Users can update slots they're already assigned to
-        resource.data.assignedUserId == request.auth.uid
-      );
-    }
-
 
 
     // Signups collection - users can manage their own signups, admins can see all

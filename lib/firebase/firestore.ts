@@ -15,7 +15,7 @@ import {
 import { db } from "./config";
 
 // Import types from the main types file
-import { Companionship, DinnerSlot, Missionary, Signup } from "@/types";
+import { Companionship, Missionary, Signup } from "@/types";
 
 // Generic Firestore operations
 export class FirestoreService {
@@ -225,95 +225,7 @@ export class CompanionshipService {
   }
 }
 
-// DinnerSlot-specific operations
-export class DinnerSlotService {
-  private static collectionName = "dinnerSlots";
-
-  static async getAllSlots(): Promise<DinnerSlot[]> {
-    return FirestoreService.getDocuments<DinnerSlot>(this.collectionName, [
-      orderBy("date"),
-    ]);
-  }
-
-  static async getSlotsByDateRange(
-    startDate: string,
-    endDate: string,
-  ): Promise<DinnerSlot[]> {
-    // Convert string dates to Date objects for Firestore comparison
-    const startDateObj = new Date(startDate);
-    const endDateObj = new Date(endDate);
-    endDateObj.setHours(23, 59, 59, 999); // Include entire end date
-
-    return FirestoreService.getDocuments<DinnerSlot>(this.collectionName, [
-      where("date", ">=", startDateObj),
-      where("date", "<=", endDateObj),
-      orderBy("date"),
-    ]);
-  }
-
-  static async getOpenSlots(): Promise<DinnerSlot[]> {
-    return FirestoreService.getDocuments<DinnerSlot>(this.collectionName, [
-      where("status", "==", "open"),
-      orderBy("date"),
-    ]);
-  }
-
-  static async getSlotsByCompanionship(
-    companionshipId: string,
-  ): Promise<DinnerSlot[]> {
-    return FirestoreService.getDocuments<DinnerSlot>(this.collectionName, [
-      where("companionshipId", "==", companionshipId),
-      orderBy("date"),
-    ]);
-  }
-
-  static async getSlotsByUser(userId: string): Promise<DinnerSlot[]> {
-    return FirestoreService.getDocuments<DinnerSlot>(this.collectionName, [
-      where("assignedUserId", "==", userId),
-      orderBy("date"),
-    ]);
-  }
-
-  static async getDinnerSlot(id: string): Promise<DinnerSlot | null> {
-    return FirestoreService.getDocument<DinnerSlot>(this.collectionName, id);
-  }
-
-  static async createDinnerSlot(
-    slot: Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">,
-  ): Promise<string> {
-    const slotData = {
-      ...slot,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    return FirestoreService.addDocument<DinnerSlot>(
-      this.collectionName,
-      slotData,
-    );
-  }
-
-  static async updateDinnerSlot(
-    id: string,
-    updates: Partial<Omit<DinnerSlot, "id" | "createdAt">>,
-  ): Promise<void> {
-    const updatesWithTimestamp = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-    return FirestoreService.updateDocument<DinnerSlot>(
-      this.collectionName,
-      id,
-      updatesWithTimestamp,
-    );
-  }
-
-  static async deleteDinnerSlot(id: string): Promise<void> {
-    return FirestoreService.deleteDocument(this.collectionName, id);
-  }
-}
-
 // Signup-specific operations
-// Calendar Template operations
 
 export class SignupService {
   private static collectionName = "signups";
@@ -325,10 +237,36 @@ export class SignupService {
     ]);
   }
 
-  static async getSignupsBySlot(slotId: string): Promise<Signup[]> {
+  static async getSignupsByCompanionship(
+    companionshipId: string,
+  ): Promise<Signup[]> {
     return FirestoreService.getDocuments<Signup>(this.collectionName, [
-      where("dinnerSlotId", "==", slotId),
-      orderBy("createdAt"),
+      where("companionshipId", "==", companionshipId),
+      orderBy("dinnerDate"),
+    ]);
+  }
+
+  static async getSignupsInDateRange(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Signup[]> {
+    return FirestoreService.getDocuments<Signup>(this.collectionName, [
+      where("dinnerDate", ">=", startDate),
+      where("dinnerDate", "<=", endDate),
+      orderBy("dinnerDate"),
+    ]);
+  }
+
+  static async getSignupsByCompanionshipInDateRange(
+    companionshipId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Signup[]> {
+    return FirestoreService.getDocuments<Signup>(this.collectionName, [
+      where("companionshipId", "==", companionshipId),
+      where("dinnerDate", ">=", startDate),
+      where("dinnerDate", "<=", endDate),
+      orderBy("dinnerDate"),
     ]);
   }
 
@@ -364,19 +302,37 @@ export class SignupService {
     return FirestoreService.deleteDocument(this.collectionName, id);
   }
 
-  // Check if user already signed up for a slot
-  static async hasUserSignedUp(
+  // Check if user already signed up for a specific companionship and date
+  static async hasUserSignedUpForDate(
     userId: string,
-    slotId: string,
+    companionshipId: string,
+    date: Date,
   ): Promise<boolean> {
     const signups = await FirestoreService.getDocuments<Signup>(
       this.collectionName,
       [
         where("userId", "==", userId),
-        where("dinnerSlotId", "==", slotId),
+        where("companionshipId", "==", companionshipId),
+        where("dinnerDate", "==", date),
         limit(1),
       ],
     );
     return signups.length > 0;
+  }
+
+  // Get existing signup for companionship and date (to check availability)
+  static async getSignupByCompanionshipAndDate(
+    companionshipId: string,
+    date: Date,
+  ): Promise<Signup | null> {
+    const signups = await FirestoreService.getDocuments<Signup>(
+      this.collectionName,
+      [
+        where("companionshipId", "==", companionshipId),
+        where("dinnerDate", "==", date),
+        limit(1),
+      ],
+    );
+    return signups.length > 0 ? signups[0] : null;
   }
 }

@@ -1,8 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,19 +15,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { CalendarService } from "@/lib/firebase/calendar";
 import {
   CompanionshipService,
-  DinnerSlotService,
   MissionaryService,
   SignupService,
 } from "@/lib/firebase/firestore";
-import { Companionship, DinnerSlot, Missionary, Signup } from "@/types";
-import {
-  AlertTriangle,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Phone,
-} from "lucide-react";
+import { Companionship, Missionary, Signup, VirtualDinnerSlot } from "@/types";
+import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -37,11 +27,6 @@ import { useCallback, useEffect, useState } from "react";
 const debugDatabaseState = async () => {
   try {
     console.log("🔍 Debug: Checking database state...");
-
-    // Check slots directly
-    const allSlots = await DinnerSlotService.getAllSlots();
-    console.log("📅 All slots in database:", allSlots.length);
-    console.log("📅 Sample slots:", allSlots.slice(0, 3));
 
     // Check companionships
     const companionships = await CompanionshipService.getActiveCompanionships();
@@ -51,7 +36,14 @@ const debugDatabaseState = async () => {
     const missionaries = await MissionaryService.getActiveMissionaries();
     console.log("👥 Active missionaries:", missionaries.length);
 
-    return { allSlots, companionships, missionaries };
+    // Check signups
+    const now = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+    const signups = await SignupService.getSignupsInDateRange(now, endDate);
+    console.log("📝 Recent signups:", signups.length);
+
+    return { companionships, missionaries, signups };
   } catch (error) {
     console.error("❌ Debug error:", error);
     return null;
@@ -61,7 +53,7 @@ const debugDatabaseState = async () => {
 interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
-  slots: DinnerSlot[];
+  slots: VirtualDinnerSlot[];
 }
 
 export default function CalendarPage() {
@@ -70,19 +62,21 @@ export default function CalendarPage() {
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
-  const [slots, setSlots] = useState<DinnerSlot[]>([]);
+  const [slots, setSlots] = useState<VirtualDinnerSlot[]>([]);
   const [companionships, setCompanionships] = useState<
     Map<string, Companionship>
   >(new Map());
   const [missionaries, setMissionaries] = useState<Map<string, Missionary>>(
     new Map(),
   );
-  const [userSignups, setUserSignups] = useState<Signup[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Modal state
-  const [selectedSlot, setSelectedSlot] = useState<DinnerSlot | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<VirtualDinnerSlot | null>(
+    null,
+  );
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showModifyModal, setShowModifyModal] = useState(false);
   const [selectedSignup, setSelectedSignup] = useState<Signup | null>(null);
@@ -94,8 +88,6 @@ export default function CalendarPage() {
     contactPreference: "email" as "email" | "phone" | "both",
     notes: "",
   });
-
-  // Redirect non-authenticated users
 
   const loadCalendarData = useCallback(async () => {
     try {
@@ -122,17 +114,10 @@ export default function CalendarPage() {
       setCompanionships(calendarData.companionships);
       setMissionaries(calendarData.missionaries);
 
-      // Load user's signups
-      if (user) {
-        const signups = await SignupService.getSignupsByUser(user.uid);
-        setUserSignups(signups);
-        console.log("👤 User signups:", signups.length);
-      }
-
       // Run debug check if no slots found
       if (calendarData.slots.length === 0) {
         console.log(
-          "⚠️ No slots found for current month, running debug check...",
+          "⚠️ No virtual slots generated for current month, running debug check...",
         );
         await debugDatabaseState();
       }
@@ -146,34 +131,17 @@ export default function CalendarPage() {
 
   const generateCalendarGrid = useCallback(() => {
     console.log("🗓️ Generating calendar grid...");
-    console.log("📅 Total slots available:", slots.length);
+    console.log("📅 Total virtual slots available:", slots.length);
 
     if (slots.length > 0) {
       console.log(
         "📅 Sample slot dates:",
-        slots.slice(0, 3).map((slot) => {
-          const date = slot.date;
-          return {
-            original: date,
-            type: typeof date,
-            isFirestoreTimestamp:
-              date && typeof date === "object" && "seconds" in date,
-            converted: new Date(
-              date instanceof Date
-                ? date
-                : (date as { toDate: () => Date })?.toDate
-                  ? (date as { toDate: () => Date }).toDate()
-                  : date,
-            ),
-            dateString: new Date(
-              date instanceof Date
-                ? date
-                : (date as { toDate: () => Date })?.toDate
-                  ? (date as { toDate: () => Date }).toDate()
-                  : date,
-            ).toDateString(),
-          };
-        }),
+        slots.slice(0, 3).map((slot) => ({
+          companionshipId: slot.companionshipId,
+          date: slot.date.toDateString(),
+          status: slot.status,
+          hasSignup: !!slot.signup,
+        })),
       );
     }
 
@@ -201,24 +169,7 @@ export default function CalendarPage() {
       const dateStr = currentDay.toDateString();
 
       const daySlots = slots.filter((slot) => {
-        // Handle different date formats (Firestore Timestamp, Date object, string)
-        let slotDate;
-        if (
-          slot.date &&
-          typeof slot.date === "object" &&
-          "toDate" in slot.date
-        ) {
-          // Firestore Timestamp
-          slotDate = (slot.date as { toDate: () => Date }).toDate();
-        } else if (slot.date instanceof Date) {
-          // Already a Date object
-          slotDate = slot.date;
-        } else {
-          // String or other format
-          slotDate = new Date(slot.date);
-        }
-
-        const slotDateStr = slotDate.toDateString();
+        const slotDateStr = slot.date.toDateString();
         const matches = slotDateStr === dateStr;
 
         if (matches) {
@@ -251,9 +202,9 @@ export default function CalendarPage() {
           date: day.date.toDateString(),
           slotsCount: day.slots.length,
           slots: day.slots.map((slot) => ({
-            id: slot.id,
             companionshipId: slot.companionshipId,
             status: slot.status,
+            hasSignup: !!slot.signup,
           })),
         })),
       );
@@ -298,11 +249,14 @@ export default function CalendarPage() {
       .filter(Boolean)
       .filter((m) => m!.isActive);
 
-    const allAllergies = companionshipMissionaries
-      .flatMap((m) => m!.allergies || [])
-      .filter(Boolean);
+    const allergiesSet = new Set<string>();
+    companionshipMissionaries.forEach((missionary) => {
+      if (missionary?.allergies) {
+        missionary.allergies.forEach((allergy) => allergiesSet.add(allergy));
+      }
+    });
 
-    return [...new Set(allAllergies)].sort();
+    return Array.from(allergiesSet);
   };
 
   const getAggregatedPreferences = (companionship: Companionship) => {
@@ -311,50 +265,58 @@ export default function CalendarPage() {
       .filter(Boolean)
       .filter((m) => m!.isActive);
 
-    const allPreferences = companionshipMissionaries
-      .flatMap((m) => m!.dinnerPreferences || [])
-      .filter(Boolean);
+    const preferencesSet = new Set<string>();
+    companionshipMissionaries.forEach((missionary) => {
+      if (missionary?.dinnerPreferences) {
+        missionary.dinnerPreferences.forEach((pref) =>
+          preferencesSet.add(pref),
+        );
+      }
+    });
 
-    return [...new Set(allPreferences)].sort();
+    return Array.from(preferencesSet);
   };
 
-  const getMissionaryNotes = (companionship: Companionship) => {
+  const getAggregatedNotes = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
       .map((id) => missionaries.get(id))
       .filter(Boolean)
       .filter((m) => m!.isActive);
 
     return companionshipMissionaries
-      .map((m) => m!.notes)
+      .map((missionary) => missionary?.notes)
       .filter(Boolean)
-      .filter((note) => note!.trim().length > 0);
+      .join("; ");
   };
 
-  const getUserSignupForSlot = (slot: DinnerSlot) => {
-    return userSignups.find(
-      (signup) =>
-        signup.dinnerSlotId === slot.id && signup.status !== "cancelled",
-    );
+  const isUserSignedUpForSlot = (slot: VirtualDinnerSlot) => {
+    return slot.signup && slot.signup.userId === user?.uid;
   };
 
-  const handleSlotClick = (slot: DinnerSlot) => {
-    const existingSignup = getUserSignupForSlot(slot);
+  const getUserSignupForSlot = (slot: VirtualDinnerSlot) => {
+    return slot.signup && slot.signup.userId === user?.uid ? slot.signup : null;
+  };
 
-    if (existingSignup) {
-      // User has already signed up, allow modification
-      setSelectedSignup(existingSignup);
-      setSelectedSlot(slot);
+  const handleSlotClick = (slot: VirtualDinnerSlot) => {
+    const companionship = companionships.get(slot.companionshipId);
+    if (!companionship) return;
+
+    setSelectedSlot(slot);
+
+    if (isUserSignedUpForSlot(slot)) {
+      // User has signed up for this slot - show modify modal
+      const userSignup = getUserSignupForSlot(slot);
+      setSelectedSignup(userSignup);
       setSignupForm({
-        userPhone: existingSignup.userPhone || "",
-        contactPreference: existingSignup.contactPreference,
-        notes: existingSignup.notes || "",
+        userPhone: userSignup?.userPhone || "",
+        contactPreference: userSignup?.contactPreference || "email",
+        notes: userSignup?.notes || "",
       });
       setShowModifyModal(true);
     } else if (slot.status === "available") {
-      // Slot is available for signup
-      setSelectedSlot(slot);
+      // Slot is available - show signup modal
       setSignupForm({
-        userPhone: user?.phoneNumber || "",
+        userPhone: "",
         contactPreference: "email",
         notes: "",
       });
@@ -368,83 +330,68 @@ export default function CalendarPage() {
     setSaving(true);
     try {
       const companionship = companionships.get(selectedSlot.companionshipId);
-      const companionshipName = companionship
-        ? getCompanionshipName(companionship)
-        : "Unknown";
+      if (!companionship) {
+        throw new Error("Companionship not found");
+      }
 
-      const signupData = {
-        dinnerSlotId: selectedSlot.id,
-        guestCount: selectedSlot.guestCount, // Use the slot's missionary count
-        userPhone: signupForm.userPhone,
-        contactPreference: signupForm.contactPreference,
-        notes: signupForm.notes,
-      };
-
+      // Create signup with embedded slot information
       await SignupService.createSignup({
-        ...signupData,
         userId: user.uid,
-        userName: user.displayName || user.email || "Unknown",
+        userName: user.displayName || user.email || "Unknown User",
         userEmail: user.email || "",
-        missionaryId: selectedSlot.companionshipId, // For compatibility
-        missionaryName: companionshipName,
+        userPhone: signupForm.userPhone,
+        companionshipId: selectedSlot.companionshipId,
         dinnerDate: selectedSlot.date,
+        dayOfWeek: selectedSlot.dayOfWeek,
+        guestCount: selectedSlot.guestCount,
         status: "confirmed",
+        contactPreference: signupForm.contactPreference,
         reminderSent: false,
+        notes: signupForm.notes,
         updatedAt: new Date(),
       });
 
-      // Update slot status
-      await DinnerSlotService.updateDinnerSlot(selectedSlot.id, {
-        status: "assigned",
-        assignedUserId: user.uid,
-        assignedUserName: user.displayName || user.email || "Unknown",
-        assignedUserEmail: user.email || "",
-        assignedUserPhone: signupForm.userPhone,
-      });
+      // Refresh calendar data
+      await loadCalendarData();
 
       setShowSignupModal(false);
       setSelectedSlot(null);
-      await loadCalendarData();
-    } catch (err) {
-      console.error("Error creating signup:", err);
-      setError("Failed to sign up for dinner slot");
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Failed to sign up. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleModifySignup = async () => {
-    if (!selectedSignup || !selectedSlot || !user) return;
+    if (!selectedSignup) return;
 
     setSaving(true);
     try {
       await SignupService.updateSignup(selectedSignup.id, {
-        guestCount: selectedSlot.guestCount, // Use the slot's missionary count
         userPhone: signupForm.userPhone,
         contactPreference: signupForm.contactPreference,
         notes: signupForm.notes,
         updatedAt: new Date(),
       });
 
-      // Update slot with new details
-      await DinnerSlotService.updateDinnerSlot(selectedSlot.id, {
-        assignedUserPhone: signupForm.userPhone,
-      });
+      // Refresh calendar data
+      await loadCalendarData();
 
       setShowModifyModal(false);
-      setSelectedSignup(null);
       setSelectedSlot(null);
-      await loadCalendarData();
-    } catch (err) {
-      console.error("Error updating signup:", err);
-      setError("Failed to update signup");
+      setSelectedSignup(null);
+    } catch (error) {
+      console.error("Update error:", error);
+      alert("Failed to update signup. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleCancelSignup = async () => {
-    if (!selectedSignup || !selectedSlot) return;
+    if (!selectedSignup) return;
 
     setSaving(true);
     try {
@@ -453,226 +400,139 @@ export default function CalendarPage() {
         updatedAt: new Date(),
       });
 
-      // Mark slot as available again
-      await DinnerSlotService.updateDinnerSlot(selectedSlot.id, {
-        status: "available",
-        assignedUserId: undefined,
-        assignedUserName: undefined,
-        assignedUserEmail: undefined,
-        assignedUserPhone: undefined,
-      });
+      // Refresh calendar data
+      await loadCalendarData();
 
       setShowModifyModal(false);
-      setSelectedSignup(null);
       setSelectedSlot(null);
-      await loadCalendarData();
-    } catch (err) {
-      console.error("Error cancelling signup:", err);
-      setError("Failed to cancel signup");
+      setSelectedSignup(null);
+    } catch (error) {
+      console.error("Cancel error:", error);
+      alert("Failed to cancel signup. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const navigateMonth = (direction: "prev" | "next") => {
-    const newDate = new Date(currentDate);
-    if (direction === "prev") {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1);
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev);
+      if (direction === "prev") {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const getSlotStatusColor = (slot: VirtualDinnerSlot) => {
+    if (isUserSignedUpForSlot(slot)) {
+      return "bg-blue-100 border-blue-300 text-blue-800";
     }
-    setCurrentDate(newDate);
-  };
-
-  const getSlotStatusColor = (slot: DinnerSlot) => {
-    const userSignup = getUserSignupForSlot(slot);
-    if (userSignup) return "bg-blue-100 border-blue-300 text-blue-800";
-    if (slot.status === "assigned")
+    if (slot.status === "taken") {
       return "bg-gray-100 border-gray-300 text-gray-600";
-    if (slot.status === "available")
-      return "bg-green-100 border-green-300 text-green-800 hover:bg-green-200 cursor-pointer";
-    return "bg-gray-100 border-gray-300 text-gray-600";
+    }
+    return "bg-green-100 border-green-300 text-green-800 hover:bg-green-200 cursor-pointer";
   };
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  const getSlotStatusText = (slot: VirtualDinnerSlot) => {
+    if (isUserSignedUpForSlot(slot)) {
+      return "Your Signup";
+    }
+    if (slot.status === "taken") {
+      return "Taken";
+    }
+    return "Available";
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading calendar...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg text-gray-600">Loading calendar...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return null;
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-600 mx-auto" />
+          <p className="mt-4 text-lg text-red-600">{error}</p>
+          <Button onClick={loadCalendarData} className="mt-4">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Calendar className="h-6 w-6" />
-                Dinner Calendar
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Sign up for dinner slots with missionary companionships
-              </p>
-            </div>
-
-            {/* Month Navigation */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateMonth("prev")}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="text-lg font-semibold min-w-48 text-center">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateMonth("next")}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Dinner Calendar
+          </h1>
+          <p className="text-lg text-gray-600">
+            Sign up to provide dinner for our missionaries
+          </p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Error Display */}
-        {error && (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
+        {/* Calendar Navigation */}
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="outline"
+            onClick={() => navigateMonth("prev")}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
 
-        {/* Debug Info */}
-        {(slots.length === 0 ||
-          (slots.length > 0 &&
-            calendarDays.filter((day) => day.slots.length > 0).length === 0)) &&
-          !loading && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-yellow-800">
-                    {slots.length === 0
-                      ? "No Dinner Slots Found"
-                      : "Slots Not Displaying"}
-                  </h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    {slots.length === 0
-                      ? "No dinner slots are available for this month."
-                      : `Found ${slots.length} slots in database but none are showing in calendar.`}{" "}
-                    This could mean:
-                  </p>
-                  <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside space-y-1">
-                    {slots.length === 0 ? (
-                      <>
-                        <li>The database has not been seeded with test data</li>
-                        <li>
-                          No dinner slots have been created for this time period
-                        </li>
-                        <li>There may be a database connection issue</li>
-                      </>
-                    ) : (
-                      <>
-                        <li>
-                          Date format mismatch between database and calendar
-                        </li>
-                        <li>
-                          Slots are for a different month than currently
-                          displayed
-                        </li>
-                        <li>
-                          Issue with date comparison in calendar grid generation
-                        </li>
-                      </>
-                    )}
-                  </ul>
-                  <p className="text-sm text-yellow-700 mt-2">
-                    Check the browser console for debugging details.
-                    {slots.length > 0 &&
-                      ` Database contains ${slots.length} slots but calendar shows ${calendarDays.filter((day) => day.slots.length > 0).length} days with slots.`}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => debugDatabaseState()}
-                  >
-                    Run Database Debug Check
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+          <h2 className="text-2xl font-semibold text-gray-900">
+            {currentDate.toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
+          </h2>
 
-        {/* Legend */}
-        <div className="mb-6 flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-            <span>Available</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-            <span>Your Signups</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
-            <span>Taken</span>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => navigateMonth("next")}
+            className="flex items-center gap-2"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Calendar Grid */}
-        <div className="bg-white rounded-lg border shadow-sm">
-          {/* Day Headers */}
-          <div className="grid grid-cols-7 border-b">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Days of week header */}
+          <div className="grid grid-cols-7 bg-gray-50 border-b">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div
                 key={day}
-                className="p-3 text-center text-sm font-medium text-gray-600 border-r last:border-r-0"
+                className="p-3 text-center font-medium text-gray-700"
               >
                 {day}
               </div>
             ))}
           </div>
 
-          {/* Calendar Days */}
+          {/* Calendar days */}
           <div className="grid grid-cols-7">
             {calendarDays.map((day, index) => (
               <div
                 key={index}
-                className={`min-h-32 p-2 border-r border-b last:border-r-0 ${
-                  !day.isCurrentMonth ? "bg-gray-50" : "bg-white"
+                className={`min-h-[120px] border-b border-r border-gray-200 p-2 ${
+                  !day.isCurrentMonth ? "bg-gray-50" : ""
                 }`}
               >
                 <div
@@ -683,29 +543,28 @@ export default function CalendarPage() {
                   {day.date.getDate()}
                 </div>
 
+                {/* Slots for this day */}
                 <div className="space-y-1">
                   {day.slots.map((slot) => {
                     const companionship = companionships.get(
                       slot.companionshipId,
                     );
-                    const userSignup = getUserSignupForSlot(slot);
+                    if (!companionship) return null;
 
                     return (
                       <div
-                        key={slot.id}
-                        className={`text-xs p-2 rounded border ${getSlotStatusColor(slot)}`}
+                        key={`${slot.companionshipId}-${slot.date.getTime()}`}
+                        className={`text-xs p-2 rounded border ${getSlotStatusColor(
+                          slot,
+                        )}`}
                         onClick={() => handleSlotClick(slot)}
                       >
-                        <div className="font-medium">
-                          {companionship
-                            ? getCompanionshipName(companionship)
-                            : "Unknown"}
+                        <div className="font-medium truncate">
+                          {getCompanionshipName(companionship)}
                         </div>
-                        {userSignup && (
-                          <div className="text-xs text-blue-600 font-medium">
-                            Your signup
-                          </div>
-                        )}
+                        <div className="opacity-75">
+                          {getSlotStatusText(slot)}
+                        </div>
                       </div>
                     );
                   })}
@@ -714,397 +573,280 @@ export default function CalendarPage() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Signup Modal */}
-      <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Sign Up for Dinner</DialogTitle>
-            <DialogDescription>
-              {selectedSlot &&
-                companionships.get(selectedSlot.companionshipId) && (
-                  <>
-                    {new Date(selectedSlot.date).toLocaleDateString()}
-                    <br />
-                    with{" "}
-                    {getCompanionshipName(
-                      companionships.get(selectedSlot.companionshipId)!,
-                    )}
-                  </>
-                )}
-            </DialogDescription>
-          </DialogHeader>
+        {/* Legend */}
+        <div className="mt-6 flex justify-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+            <span className="text-sm text-gray-600">Available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+            <span className="text-sm text-gray-600">Your Signup</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
+            <span className="text-sm text-gray-600">Taken</span>
+          </div>
+        </div>
 
-          {selectedSlot && companionships.get(selectedSlot.companionshipId) && (
+        {/* Signup Modal */}
+        <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Sign Up for Dinner</DialogTitle>
+              <DialogDescription>
+                {selectedSlot &&
+                  companionships.get(selectedSlot.companionshipId) && (
+                    <>
+                      <div className="mb-4">
+                        <p className="font-medium">
+                          {getCompanionshipName(
+                            companionships.get(selectedSlot.companionshipId)!,
+                          )}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {selectedSlot.date.toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Number of missionaries: {selectedSlot.guestCount}
+                        </p>
+                      </div>
+
+                      {/* Dietary Information */}
+                      {(() => {
+                        const companionship = companionships.get(
+                          selectedSlot.companionshipId,
+                        )!;
+                        const allergies = getAggregatedAllergies(companionship);
+                        const preferences =
+                          getAggregatedPreferences(companionship);
+                        const notes = getAggregatedNotes(companionship);
+
+                        return (
+                          <div className="space-y-3 mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <h4 className="font-medium text-yellow-800 flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              Dietary Information
+                            </h4>
+
+                            {allergies.length > 0 && (
+                              <div>
+                                <span className="font-medium text-red-700">
+                                  Allergies:{" "}
+                                </span>
+                                <span className="text-red-600">
+                                  {allergies.join(", ")}
+                                </span>
+                              </div>
+                            )}
+
+                            {preferences.length > 0 && (
+                              <div>
+                                <span className="font-medium text-blue-700">
+                                  Preferences:{" "}
+                                </span>
+                                <span className="text-blue-600">
+                                  {preferences.join(", ")}
+                                </span>
+                              </div>
+                            )}
+
+                            {notes && (
+                              <div>
+                                <span className="font-medium text-gray-700">
+                                  Notes:{" "}
+                                </span>
+                                <span className="text-gray-600">{notes}</span>
+                              </div>
+                            )}
+
+                            {allergies.length === 0 &&
+                              preferences.length === 0 &&
+                              !notes && (
+                                <p className="text-gray-600">
+                                  No special dietary requirements
+                                </p>
+                              )}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
+              </DialogDescription>
+            </DialogHeader>
+
             <div className="space-y-4">
-              {/* Companionship Info */}
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {companionships.get(selectedSlot.companionshipId)!.area}{" "}
-                        Area
-                      </span>
-                    </div>
+              <div>
+                <Label htmlFor="userPhone">Phone Number (Optional)</Label>
+                <Input
+                  id="userPhone"
+                  type="tel"
+                  placeholder="Your phone number"
+                  value={signupForm.userPhone}
+                  onChange={(e) =>
+                    setSignupForm({ ...signupForm, userPhone: e.target.value })
+                  }
+                />
+              </div>
 
-                    {companionships.get(selectedSlot.companionshipId)!
-                      .phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {
-                            companionships.get(selectedSlot.companionshipId)!
-                              .phone
-                          }
-                        </span>
-                      </div>
-                    )}
+              <div>
+                <Label htmlFor="contactPreference">Contact Preference</Label>
+                <select
+                  id="contactPreference"
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                  value={signupForm.contactPreference}
+                  onChange={(e) =>
+                    setSignupForm({
+                      ...signupForm,
+                      contactPreference: e.target.value as
+                        | "email"
+                        | "phone"
+                        | "both",
+                    })
+                  }
+                >
+                  <option value="email">Email</option>
+                  <option value="phone">Phone</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
 
-                    {getAggregatedAllergies(
-                      companionships.get(selectedSlot.companionshipId)!,
-                    ).length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-red-700 mb-1">
-                          Allergies:
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {getAggregatedAllergies(
-                            companionships.get(selectedSlot.companionshipId)!,
-                          ).map((allergy, index) => (
-                            <Badge
-                              key={index}
-                              variant="destructive"
-                              className="text-xs"
-                            >
-                              {allergy}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Signup Form */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="guest-count">Number of Missionaries</Label>
-                  <div className="p-3 bg-gray-50 border rounded-md">
-                    <span className="text-sm font-medium">
-                      {selectedSlot?.guestCount} missionaries
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Your Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={signupForm.userPhone}
-                    onChange={(e) =>
-                      setSignupForm({
-                        ...signupForm,
-                        userPhone: e.target.value,
-                      })
-                    }
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-
-                <div>
-                  <Label>Missionary Food Information</Label>
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-3">
-                    {/* Allergies */}
-                    {getAggregatedAllergies(
-                      companionships.get(selectedSlot.companionshipId)!,
-                    ).length > 0 ? (
-                      <div>
-                        <p className="text-sm font-medium text-red-700 mb-1">
-                          ⚠️ Important Allergies:
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {getAggregatedAllergies(
-                            companionships.get(selectedSlot.companionshipId)!,
-                          ).map((allergy, index) => (
-                            <Badge
-                              key={index}
-                              variant="destructive"
-                              className="text-xs"
-                            >
-                              {allergy}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-green-700">
-                        ✅ No known allergies reported
-                      </p>
-                    )}
-
-                    {/* Preferences */}
-                    {getAggregatedPreferences(
-                      companionships.get(selectedSlot.companionshipId)!,
-                    ).length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-blue-700 mb-1">
-                          🍽️ Food Preferences:
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {getAggregatedPreferences(
-                            companionships.get(selectedSlot.companionshipId)!,
-                          ).map((preference, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {preference}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Notes */}
-                    {getMissionaryNotes(
-                      companionships.get(selectedSlot.companionshipId)!,
-                    ).length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">
-                          📝 Additional Notes:
-                        </p>
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          {getMissionaryNotes(
-                            companionships.get(selectedSlot.companionshipId)!,
-                          ).map((note, index) => (
-                            <li key={index} className="list-disc list-inside">
-                              {note}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    <p className="text-xs text-muted-foreground border-t pt-2">
-                      This information is provided by the missionaries. Please
-                      plan meals accordingly.
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="member-notes">
-                    Notes for Missionaries/Coordinator
-                  </Label>
-                  <Textarea
-                    id="member-notes"
-                    value={signupForm.notes}
-                    onChange={(e) =>
-                      setSignupForm({
-                        ...signupForm,
-                        notes: e.target.value,
-                      })
-                    }
-                    placeholder="Any additional notes or information..."
-                    rows={2}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="notes">Notes for Missionaries (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Any additional notes or information..."
+                  value={signupForm.notes}
+                  onChange={(e) =>
+                    setSignupForm({ ...signupForm, notes: e.target.value })
+                  }
+                />
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowSignupModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
                 <Button
                   onClick={handleSignup}
                   disabled={saving}
                   className="flex-1"
                 >
-                  {saving ? "Signing up..." : "Sign Up"}
+                  {saving ? "Signing Up..." : "Sign Up"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSignupModal(false)}
+                  disabled={saving}
+                >
+                  Cancel
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
 
-      {/* Modify Signup Modal */}
-      <Dialog open={showModifyModal} onOpenChange={setShowModifyModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Modify Your Signup</DialogTitle>
-            <DialogDescription>
-              {selectedSlot && (
-                <>{new Date(selectedSlot.date).toLocaleDateString()}</>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="modify-guest-count">Number of Missionaries</Label>
-              <div className="p-3 bg-gray-50 border rounded-md">
-                <span className="text-sm font-medium">
-                  {selectedSlot?.guestCount} missionaries
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="modify-phone">Your Phone Number</Label>
-              <Input
-                id="modify-phone"
-                type="tel"
-                value={signupForm.userPhone}
-                onChange={(e) =>
-                  setSignupForm({ ...signupForm, userPhone: e.target.value })
-                }
-                placeholder="(555) 123-4567"
-              />
-            </div>
-
-            <div>
-              <Label>Missionary Food Information</Label>
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-3">
+        {/* Modify Signup Modal */}
+        <Dialog open={showModifyModal} onOpenChange={setShowModifyModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modify Your Signup</DialogTitle>
+              <DialogDescription>
                 {selectedSlot &&
                   companionships.get(selectedSlot.companionshipId) && (
-                    <>
-                      {/* Allergies */}
-                      {getAggregatedAllergies(
-                        companionships.get(selectedSlot.companionshipId)!,
-                      ).length > 0 ? (
-                        <div>
-                          <p className="text-sm font-medium text-red-700 mb-1">
-                            ⚠️ Important Allergies:
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {getAggregatedAllergies(
-                              companionships.get(selectedSlot.companionshipId)!,
-                            ).map((allergy, index) => (
-                              <Badge
-                                key={index}
-                                variant="destructive"
-                                className="text-xs"
-                              >
-                                {allergy}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-green-700">
-                          ✅ No known allergies reported
-                        </p>
-                      )}
-
-                      {/* Preferences */}
-                      {getAggregatedPreferences(
-                        companionships.get(selectedSlot.companionshipId)!,
-                      ).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">
-                            🍽️ Food Preferences:
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {getAggregatedPreferences(
-                              companionships.get(selectedSlot.companionshipId)!,
-                            ).map((preference, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {preference}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Notes */}
-                      {getMissionaryNotes(
-                        companionships.get(selectedSlot.companionshipId)!,
-                      ).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-700 mb-1">
-                            📝 Additional Notes:
-                          </p>
-                          <ul className="text-sm text-gray-600 space-y-1">
-                            {getMissionaryNotes(
-                              companionships.get(selectedSlot.companionshipId)!,
-                            ).map((note, index) => (
-                              <li key={index} className="list-disc list-inside">
-                                {note}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-muted-foreground border-t pt-2">
-                        This information is provided by the missionaries. Please
-                        plan meals accordingly.
+                    <div className="mb-4">
+                      <p className="font-medium">
+                        {getCompanionshipName(
+                          companionships.get(selectedSlot.companionshipId)!,
+                        )}
                       </p>
-                    </>
+                      <p className="text-sm text-gray-600">
+                        {selectedSlot.date.toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
                   )}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="modifyPhone">Phone Number</Label>
+                <Input
+                  id="modifyPhone"
+                  type="tel"
+                  placeholder="Your phone number"
+                  value={signupForm.userPhone}
+                  onChange={(e) =>
+                    setSignupForm({ ...signupForm, userPhone: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="modifyContactPreference">
+                  Contact Preference
+                </Label>
+                <select
+                  id="modifyContactPreference"
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                  value={signupForm.contactPreference}
+                  onChange={(e) =>
+                    setSignupForm({
+                      ...signupForm,
+                      contactPreference: e.target.value as
+                        | "email"
+                        | "phone"
+                        | "both",
+                    })
+                  }
+                >
+                  <option value="email">Email</option>
+                  <option value="phone">Phone</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="modifyNotes">Notes</Label>
+                <Textarea
+                  id="modifyNotes"
+                  placeholder="Any additional notes..."
+                  value={signupForm.notes}
+                  onChange={(e) =>
+                    setSignupForm({ ...signupForm, notes: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleModifySignup}
+                  disabled={saving}
+                  className="flex-1"
+                >
+                  {saving ? "Updating..." : "Update"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCancelSignup}
+                  disabled={saving}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Cancel Signup
+                </Button>
               </div>
             </div>
-
-            <div>
-              <Label htmlFor="modify-member-notes">
-                Notes for Missionaries/Coordinator
-              </Label>
-              <Textarea
-                id="modify-member-notes"
-                value={signupForm.notes}
-                onChange={(e) =>
-                  setSignupForm({
-                    ...signupForm,
-                    notes: e.target.value,
-                  })
-                }
-                placeholder="Any additional notes or information..."
-                rows={2}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowModifyModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleCancelSignup}
-                disabled={saving}
-                className="flex-1"
-              >
-                {saving ? "Cancelling..." : "Cancel Signup"}
-              </Button>
-              <Button
-                onClick={handleModifySignup}
-                disabled={saving}
-                className="flex-1"
-              >
-                {saving ? "Updating..." : "Update"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

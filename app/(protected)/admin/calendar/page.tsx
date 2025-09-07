@@ -1,556 +1,383 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { CalendarService } from "@/lib/firebase/calendar";
-import { CompanionshipService } from "@/lib/firebase/firestore";
-import { Companionship } from "@/types";
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Plus,
-  RefreshCw,
-  Users,
-} from "lucide-react";
+  CompanionshipService,
+  MissionaryService,
+  SignupService,
+} from "@/lib/firebase/firestore";
+import { Companionship, Missionary, Signup } from "@/types";
+import { Calendar, CheckCircle, Clock, Info, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function AdminCalendarPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, userData } = useAuth();
   const router = useRouter();
 
-  // Data states
   const [companionships, setCompanionships] = useState<Companionship[]>([]);
+  const [missionaries, setMissionaries] = useState<Missionary[]>([]);
+  const [upcomingSignups, setUpcomingSignups] = useState<Signup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  // Form states
-  const [selectedCompanionshipId, setSelectedCompanionshipId] = useState("");
-  const [generatingSlots, setGeneratingSlots] = useState(false);
-  const [generatingAll, setGeneratingAll] = useState(false);
-  const [slotFormData, setSlotFormData] = useState({
-    startDate: new Date().toISOString().split("T")[0],
-    months: 3,
-  });
-
+  // Redirect non-admin users
   useEffect(() => {
-    if (user && isAdmin) {
-      loadData();
+    if (!user || (userData && userData.role !== "admin")) {
+      router.push("/calendar");
     }
-  }, [user, isAdmin]);
+  }, [user, userData, router]);
 
-  const loadData = async () => {
+  const loadAdminData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [companionshipsData] = await Promise.all([
+      const [companionshipData, missionaryData] = await Promise.all([
         CompanionshipService.getActiveCompanionships(),
+        MissionaryService.getActiveMissionaries(),
       ]);
 
-      setCompanionships(companionshipsData);
+      setCompanionships(companionshipData);
+      setMissionaries(missionaryData);
+
+      // Get upcoming signups for the next 30 days
+      const now = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+      const signups = await SignupService.getSignupsInDateRange(
+        now,
+        thirtyDaysFromNow,
+      );
+
+      // Sort by date
+      signups.sort(
+        (a, b) =>
+          new Date(a.dinnerDate).getTime() - new Date(b.dinnerDate).getTime(),
+      );
+      setUpcomingSignups(signups);
     } catch (err) {
-      console.error("Error loading data:", err);
-      setError("Failed to load companionships");
+      console.error("Error loading admin data:", err);
+      setError("Failed to load admin data");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleGenerateSlots = async () => {
-    if (!selectedCompanionshipId || !user) return;
-
-    setGeneratingSlots(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const companionship = companionships.find(
-        (c) => c.id === selectedCompanionshipId,
-      );
-
-      if (!companionship) {
-        throw new Error("Companionship not found");
-      }
-
-      const startDate = new Date(slotFormData.startDate);
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + slotFormData.months);
-
-      const slotsCreated = await CalendarService.generateSlotsForCompanionship(
-        companionship,
-        startDate,
-        endDate,
-        user.uid,
-      );
-
-      setSuccess(
-        `Generated ${slotsCreated} dinner slots for ${companionship.area} companionship`,
-      );
-
-      // Reset form
-      setSelectedCompanionshipId("");
-    } catch (err) {
-      console.error("Error generating slots:", err);
-      setError(err instanceof Error ? err.message : "Failed to generate slots");
-    } finally {
-      setGeneratingSlots(false);
+  useEffect(() => {
+    if (user && userData?.role === "admin") {
+      loadAdminData();
     }
-  };
+  }, [user, userData, loadAdminData]);
 
-  const handleGenerateAllSlots = async () => {
-    if (!user) return;
+  const getCompanionshipName = (companionshipId: string) => {
+    const companionship = companionships.find((c) => c.id === companionshipId);
+    if (!companionship) return "Unknown Companionship";
 
-    setGeneratingAll(true);
-    setError(null);
-    setSuccess(null);
+    const companionshipMissionaries = companionship.missionaryIds
+      .map((id) => missionaries.find((m) => m.id === id))
+      .filter(Boolean)
+      .filter((m) => m!.isActive);
 
-    try {
-      const result = await CalendarService.initializeSlotsForAllCompanionships(
-        user.uid,
-      );
-
-      setSuccess(
-        `Auto-generated ${result.slotsCreated} dinner slots for all active companionships`,
-      );
-    } catch (err) {
-      console.error("Error generating slots for all companionships:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to generate slots for all companionships",
-      );
-    } finally {
-      setGeneratingAll(false);
+    if (companionshipMissionaries.length === 0) {
+      return "No Active Missionaries";
     }
+    if (companionshipMissionaries.length === 1) {
+      return companionshipMissionaries[0]!.name;
+    }
+    return companionshipMissionaries
+      .map((m) => m!.name)
+      .sort()
+      .join(" & ");
   };
 
-  if (!user) return null;
+  const getDaysOfWeekText = (daysOfWeek: number[]) => {
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return daysOfWeek.map((day) => dayNames[day]).join(", ");
+  };
 
-  if (!isAdmin) {
+  const getSignupsForCompanionship = (companionshipId: string) => {
+    return upcomingSignups.filter(
+      (signup) => signup.companionshipId === companionshipId,
+    );
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Access Denied
-          </h1>
-          <p className="text-gray-600 mb-4">
-            You need admin privileges to access this page.
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg text-gray-600">
+            Loading admin dashboard...
           </p>
-          <Button onClick={() => router.push("/calendar")}>
-            Go to Calendar
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-red-600">{error}</p>
+          <Button onClick={loadAdminData} className="mt-4">
+            Try Again
           </Button>
         </div>
       </div>
     );
   }
 
+  if (!user || userData?.role !== "admin") {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/admin")}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <Calendar className="h-6 w-6" />
-                  Calendar Management
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Generate dinner slots for companionships
-                </p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Calendar className="h-8 w-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900">
+              Calendar Administration
+            </h1>
           </div>
+          <p className="text-lg text-gray-600">
+            Monitor dinner signups and companionship schedules
+          </p>
         </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Status Messages */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
+        {/* Info Card about New System */}
+        <Card className="mb-8 bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-800">
+              <Info className="h-5 w-5" />
+              Dynamic Slot System
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-blue-700">
+              Dinner slots are now generated automatically based on
+              companionship schedules. No need to manually create slots - they
+              appear dynamically on the calendar when members view available
+              dates.
+            </p>
+            <div className="mt-4 flex gap-4">
+              <Button
+                onClick={() => router.push("/admin/companionships")}
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                Manage Companionships
+              </Button>
+              <Button
+                onClick={() => router.push("/calendar")}
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                View Calendar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-            {success}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Generate for Specific Companionship */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Generate Slots for Companionship
-                </CardTitle>
-                <CardDescription>
-                  Create dinner slots for a specific companionship based on
-                  their schedule
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="companionship">Select Companionship</Label>
-                    <Select
-                      value={selectedCompanionshipId}
-                      onValueChange={setSelectedCompanionshipId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a companionship..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {companionships.map((companionship) => {
-                          const activeMissionaries =
-                            companionship.missionaryIds.length;
-                          const daysCount =
-                            companionship.daysOfWeek?.length || 0;
-
-                          return (
-                            <SelectItem
-                              key={companionship.id}
-                              value={companionship.id}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{companionship.area} Area</span>
-                                <div className="flex gap-2 ml-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {activeMissionaries} missionaries
-                                  </Badge>
-                                  <Badge variant="outline" className="text-xs">
-                                    {daysCount} days/week
-                                  </Badge>
-                                </div>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="start-date">Start Date</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={slotFormData.startDate}
-                      onChange={(e) =>
-                        setSlotFormData({
-                          ...slotFormData,
-                          startDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="months">Number of Months</Label>
-                  <Select
-                    value={slotFormData.months.toString()}
-                    onValueChange={(value) =>
-                      setSlotFormData({
-                        ...slotFormData,
-                        months: parseInt(value),
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 month</SelectItem>
-                      <SelectItem value="2">2 months</SelectItem>
-                      <SelectItem value="3">3 months</SelectItem>
-                      <SelectItem value="6">6 months</SelectItem>
-                      <SelectItem value="12">1 year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {selectedCompanionshipId && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-800 mb-2">
-                      Companionship Schedule Preview
-                    </h4>
-                    {(() => {
-                      const companionship = companionships.find(
-                        (c) => c.id === selectedCompanionshipId,
-                      );
-                      if (!companionship) return null;
-
-                      const daysOfWeek = [
-                        "Sun",
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri",
-                        "Sat",
-                      ];
-                      const scheduledDays =
-                        companionship.daysOfWeek
-                          ?.map((d) => daysOfWeek[d])
-                          .join(", ") || "No days selected";
-
-                      return (
-                        <div className="text-sm text-blue-700">
-                          <p>
-                            <strong>Area:</strong> {companionship.area}
-                          </p>
-                          <p>
-                            <strong>Missionaries:</strong>{" "}
-                            {companionship.missionaryIds.length}
-                          </p>
-                          <p>
-                            <strong>Available Days:</strong> {scheduledDays}
-                          </p>
-                          <p>
-                            <strong>Slots to generate:</strong> Approximately{" "}
-                            {Math.ceil((slotFormData.months * 30) / 7) *
-                              (companionship.daysOfWeek?.length || 0)}{" "}
-                            slots
-                          </p>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleGenerateSlots}
-                  disabled={!selectedCompanionshipId || generatingSlots}
-                  className="w-full"
-                >
-                  {generatingSlots ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Slots...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Generate Dinner Slots
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Generate for All Companionships */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5" />
-                  Generate Slots for All Companionships
-                </CardTitle>
-                <CardDescription>
-                  Automatically generate dinner slots for all active
-                  companionships
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <RefreshCw className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-yellow-800">
-                        Bulk Generation
-                      </h4>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        This will create dinner slots for the next 3 months for
-                        all active companionships based on their individual
-                        schedules. Only new slots will be created (duplicates
-                        avoided).
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div className="bg-white border rounded-lg p-3">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {companionships.length}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Active Companionships
-                    </div>
-                  </div>
-                  <div className="bg-white border rounded-lg p-3">
-                    <div className="text-2xl font-bold text-green-600">
-                      {companionships.reduce(
-                        (sum, c) => sum + c.missionaryIds.length,
-                        0,
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Total Missionaries
-                    </div>
-                  </div>
-                  <div className="bg-white border rounded-lg p-3">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {Math.round(
-                        companionships.reduce(
-                          (sum, c) => sum + (c.daysOfWeek?.length || 0),
-                          0,
-                        ) / companionships.length || 0,
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Avg Days/Week
-                    </div>
-                  </div>
-                  <div className="bg-white border rounded-lg p-3">
-                    <div className="text-2xl font-bold text-orange-600">
-                      ~
-                      {companionships.reduce(
-                        (sum, c) =>
-                          sum + Math.ceil(90 / 7) * (c.daysOfWeek?.length || 0),
-                        0,
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Est. Slots (3mo)
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleGenerateAllSlots}
-                  disabled={generatingAll || companionships.length === 0}
-                  className="w-full"
-                  size="lg"
-                >
-                  {generatingAll ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Slots for All Companionships...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Generate Slots for All Active Companionships
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Companionships Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Active Companionships
-                </CardTitle>
-                <CardDescription>
-                  Overview of all active companionships and their schedules
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {companionships.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No active companionships found. Create companionships
-                      first.
-                    </p>
-                  ) : (
-                    companionships.map((companionship) => {
-                      const daysOfWeek = [
-                        "Sun",
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri",
-                        "Sat",
-                      ];
-                      const scheduledDays =
-                        companionship.daysOfWeek
-                          ?.map((d) => daysOfWeek[d])
-                          .join(", ") || "No schedule";
-
-                      return (
-                        <div
-                          key={companionship.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                        >
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Companionship Schedules */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Active Companionships
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {companionships.length === 0 ? (
+                  <p className="text-gray-500">
+                    No active companionships found.
+                  </p>
+                ) : (
+                  companionships.map((companionship) => {
+                    const upcomingForThis = getSignupsForCompanionship(
+                      companionship.id,
+                    );
+                    return (
+                      <div
+                        key={companionship.id}
+                        className="p-4 border rounded-lg bg-white"
+                      >
+                        <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h4 className="font-medium">
-                              {companionship.area} Area
+                            <h4 className="font-medium text-gray-900">
+                              {getCompanionshipName(companionship.id)}
                             </h4>
-                            <p className="text-sm text-muted-foreground">
-                              {companionship.missionaryIds.length} missionaries
-                              • {scheduledDays}
+                            <p className="text-sm text-gray-600">
+                              {companionship.area} Area
                             </p>
                           </div>
-                          <div className="flex gap-2">
-                            <Badge
-                              variant={
-                                companionship.missionaryIds.length >= 2
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {companionship.missionaryIds.length} missionaries
-                            </Badge>
-                            <Badge
-                              variant={
-                                companionship.daysOfWeek?.length
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {companionship.daysOfWeek?.length || 0} days/week
-                            </Badge>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">
+                              Available:{" "}
+                              {getDaysOfWeekText(companionship.daysOfWeek)}
+                            </div>
+                            <div className="text-sm text-green-600 font-medium">
+                              {upcomingForThis.length} upcoming signups
+                            </div>
                           </div>
                         </div>
-                      );
-                    })
-                  )}
+
+                        {companionship.phone && (
+                          <p className="text-sm text-gray-600">
+                            📞 {companionship.phone}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Signups */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Upcoming Signups ({upcomingSignups.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {upcomingSignups.length === 0 ? (
+                  <p className="text-gray-500">No upcoming signups.</p>
+                ) : (
+                  upcomingSignups.slice(0, 10).map((signup) => (
+                    <div
+                      key={signup.id}
+                      className="p-3 border rounded-lg bg-white"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h5 className="font-medium text-gray-900">
+                            {signup.userName}
+                          </h5>
+                          <p className="text-sm text-gray-600">
+                            {getCompanionshipName(signup.companionshipId)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(signup.dinnerDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-sm text-green-600 capitalize">
+                              {signup.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {signup.guestCount} missionaries
+                          </p>
+                        </div>
+                      </div>
+
+                      {signup.userPhone && (
+                        <div className="mt-2 pt-2 border-t text-sm text-gray-600">
+                          📞 {signup.userPhone}
+                        </div>
+                      )}
+
+                      {signup.notes && (
+                        <div className="mt-1 text-sm text-gray-600">
+                          💬 {signup.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+
+                {upcomingSignups.length > 10 && (
+                  <p className="text-center text-sm text-gray-500 pt-2">
+                    ... and {upcomingSignups.length - 10} more
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="mt-8 grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Active Companionships</p>
+                  <p className="text-2xl font-bold">{companionships.length}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                <Users className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Active Missionaries</p>
+                  <p className="text-2xl font-bold">{missionaries.length}</p>
+                </div>
+                <Users className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Upcoming Signups</p>
+                  <p className="text-2xl font-bold">{upcomingSignups.length}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">This Week</p>
+                  <p className="text-2xl font-bold">
+                    {
+                      upcomingSignups.filter((signup) => {
+                        const signupDate = new Date(signup.dinnerDate);
+                        const now = new Date();
+                        const weekFromNow = new Date();
+                        weekFromNow.setDate(now.getDate() + 7);
+                        return signupDate >= now && signupDate <= weekFromNow;
+                      }).length
+                    }
+                  </p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

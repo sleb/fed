@@ -1,4 +1,4 @@
-import { Companionship, DinnerSlot, Missionary } from "@/types";
+import { Companionship, Missionary } from "@/types";
 import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { db } from "./config";
 
@@ -138,54 +138,7 @@ const SAMPLE_COMPANIONSHIPS = [
   },
 ];
 
-// Generate dinner slots for the next 4 weeks based on companionship schedules
-const generateDinnerSlots = (
-  companionships: {
-    id: string;
-    daysOfWeek: number[];
-    missionaryCount: number;
-  }[],
-): Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] => {
-  const slots: Omit<DinnerSlot, "id" | "createdAt" | "updatedAt">[] = [];
-  const today = new Date();
-  const daysOfWeek = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-
-  // Generate slots for next 4 weeks
-  for (let week = 0; week < 4; week++) {
-    for (let day = 0; day < 7; day++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + week * 7 + day + 1); // Start from tomorrow
-
-      const dayOfWeek = date.getDay();
-
-      // Each companionship gets slots based on their available days
-      companionships.forEach((companionship) => {
-        // Only create slots for days this companionship is available
-        if (companionship.daysOfWeek.includes(dayOfWeek)) {
-          slots.push({
-            companionshipId: companionship.id,
-            date,
-            dayOfWeek: daysOfWeek[dayOfWeek],
-            status: "available",
-            guestCount: companionship.missionaryCount,
-            notes: "",
-            createdBy: "system-seed",
-          });
-        }
-      });
-    }
-  }
-
-  return slots;
-};
+// Dynamic slot system - no pre-generation needed
 
 export const seedDatabase = async (): Promise<void> => {
   try {
@@ -256,19 +209,7 @@ export const seedDatabase = async (): Promise<void> => {
       missionaryCount: template.missionaryNames.length,
     }));
 
-    const dinnerSlots = generateDinnerSlots(companionshipData);
-
-    for (const slot of dinnerSlots) {
-      const slotData = {
-        ...slot,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await addDoc(collection(db, "dinnerSlots"), slotData);
-    }
-
-    console.log(`✅ Created ${dinnerSlots.length} dinner slots`);
+    console.log(`✅ Dynamic slot system ready`);
 
     // Step 4: Create a sample admin user (optional)
     console.log("👤 Creating sample admin user...");
@@ -303,7 +244,7 @@ export const seedDatabase = async (): Promise<void> => {
       `   - ${SAMPLE_MISSIONARIES.length} individual missionaries created`,
     );
     console.log(`   - ${SAMPLE_COMPANIONSHIPS.length} companionships created`);
-    console.log(`   - ${dinnerSlots.length} dinner slots created`);
+    console.log(`   - Dynamic slots enabled`);
     console.log(`   - Ready for signups!`);
   } catch (error) {
     console.error("❌ Error seeding database:", error);
@@ -314,7 +255,5 @@ export const seedDatabase = async (): Promise<void> => {
 export const clearTestData = async (): Promise<void> => {
   console.log("🧹 Note: Manual cleanup required");
   console.log("Please use Firebase Console or Admin SDK to clear test data");
-  console.log(
-    "Collections to clear: missionaries, companionships, dinnerSlots, signups",
-  );
+  console.log("Collections to clear: missionaries, companionships, signups");
 };

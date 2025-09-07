@@ -24,22 +24,7 @@ export interface Companionship {
   updatedAt: Date;
 }
 
-export interface DinnerSlot {
-  id: string;
-  companionshipId: string; // Updated to reference companionship directly
-  date: Date;
-  dayOfWeek: string;
-  status: "available" | "assigned" | "completed" | "cancelled";
-  assignedUserId?: string;
-  assignedUserName?: string;
-  assignedUserEmail?: string;
-  assignedUserPhone?: string;
-  guestCount: number; // Number of missionaries eating (usually 2)
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string; // Admin who created the slot
-}
+// Slots are generated dynamically - no database storage needed
 
 export interface Signup {
   id: string;
@@ -47,11 +32,11 @@ export interface Signup {
   userName: string;
   userEmail: string;
   userPhone?: string;
-  dinnerSlotId: string;
-  missionaryId: string;
-  missionaryName: string;
+  // Slot information is now embedded directly in signup
+  companionshipId: string;
   dinnerDate: Date;
-  guestCount: number;
+  dayOfWeek: string;
+  guestCount: number; // Number of missionaries eating
   status: "confirmed" | "pending" | "cancelled" | "completed";
   contactPreference: "email" | "phone" | "both";
   reminderSent: boolean;
@@ -83,42 +68,40 @@ export interface UserProfile {
 }
 
 export interface SignupFormData {
-  dinnerSlotId: string;
+  companionshipId: string;
+  dinnerDate: Date;
+  dayOfWeek: string;
   guestCount: number;
   userPhone?: string;
   contactPreference: "email" | "phone" | "both";
   notes?: string;
 }
 
-export interface DinnerSlotWithMissionary extends DinnerSlot {
-  missionary: Missionary;
+// Virtual slots for calendar display - generated from companionship schedules
+export interface VirtualDinnerSlot {
+  companionshipId: string;
+  date: Date;
+  dayOfWeek: string;
+  guestCount: number;
+  status: "available" | "taken";
+  signup?: Signup; // If someone has signed up for this slot
 }
 
 export interface SignupWithDetails extends Signup {
-  missionary: Missionary;
-  dinnerSlot: DinnerSlot;
+  companionship: Companionship;
+  missionaries: Missionary[];
 }
 
-// Filters and search types
-export interface DinnerSlotFilters {
-  dateFrom?: Date;
-  dateTo?: Date;
-  area?: string;
-  zone?: string;
-  district?: string;
-  availableOnly?: boolean;
-  missionaryId?: string;
-}
-
+// Search and filter interfaces
 export interface SignupFilters {
   status?: Signup["status"];
   dateFrom?: Date;
   dateTo?: Date;
   userId?: string;
-  missionaryId?: string;
+  companionshipId?: string;
 }
 
-// Firebase document converters helper types
+// Utility types for data conversion
 export type FirestoreTimestamp = {
   seconds: number;
   nanoseconds: number;
