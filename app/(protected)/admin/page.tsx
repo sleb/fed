@@ -11,10 +11,13 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { updateUserRole } from "@/lib/firebase/auth";
+import { EmulatorUtils } from "@/lib/firebase/emulatorUtils";
 import { seedDatabase } from "@/lib/firebase/seedData";
 import {
   AlertTriangle,
+  Bug,
   Database,
+  Trash2,
   UserCog,
   Users,
   Utensils,
@@ -28,6 +31,8 @@ export default function AdminPage() {
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [makingAdmin, setMakingAdmin] = useState(false);
+  const [debugResult, setDebugResult] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
   const router = useRouter();
 
   const handleSeedDatabase = async () => {
@@ -45,6 +50,64 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Failed to seed database");
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const handleCheckDatabase = async () => {
+    setError(null);
+    setDebugResult(null);
+
+    try {
+      console.log("🔍 Starting database inspection...");
+      await EmulatorUtils.inspectDatabase();
+      await EmulatorUtils.checkSignupData();
+      setDebugResult(
+        "Database inspection complete. Check the console for detailed results.",
+      );
+    } catch (err) {
+      console.error("Database check error:", err);
+      setError(err instanceof Error ? err.message : "Failed to check database");
+    }
+  };
+
+  const handleCleanupSignups = async () => {
+    setError(null);
+    setDebugResult(null);
+
+    try {
+      await EmulatorUtils.cleanupProblematicSignups();
+      setDebugResult(
+        "Cleanup complete. Problematic signups have been removed.",
+      );
+    } catch (err) {
+      console.error("Cleanup error:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to cleanup signups",
+      );
+    }
+  };
+
+  const handleClearAllData = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to clear ALL emulator data? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    setClearing(true);
+    setError(null);
+    setDebugResult(null);
+
+    try {
+      await EmulatorUtils.clearAllData();
+      setDebugResult("All emulator data cleared successfully.");
+    } catch (err) {
+      console.error("Clear data error:", err);
+      setError(err instanceof Error ? err.message : "Failed to clear data");
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -318,6 +381,88 @@ export default function AdminPage() {
                 </ol>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Emulator Debug Tools */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bug className="h-5 w-5" />
+              Emulator Debug Tools
+            </CardTitle>
+            <CardDescription>
+              Debug and troubleshoot emulator database issues
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Debug Results */}
+            {debugResult && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Bug className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">Debug Results</h4>
+                    <p className="text-sm text-blue-700 mt-1">{debugResult}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Debug Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button onClick={handleCheckDatabase} variant="outline" size="sm">
+                <Bug className="h-4 w-4 mr-2" />
+                Inspect Database
+              </Button>
+
+              <Button
+                onClick={handleCleanupSignups}
+                variant="outline"
+                size="sm"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clean Signups
+              </Button>
+
+              <Button
+                onClick={handleClearAllData}
+                disabled={clearing}
+                variant="destructive"
+                size="sm"
+              >
+                {clearing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All Data
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-medium text-gray-800 mb-2">Debug Tools:</h4>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>
+                  • <strong>Inspect Database:</strong> Check collection counts
+                  and data integrity
+                </li>
+                <li>
+                  • <strong>Clean Signups:</strong> Remove problematic signup
+                  documents (missing userId, etc.)
+                </li>
+                <li>
+                  • <strong>Clear All Data:</strong> Completely reset the
+                  emulator database
+                </li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>

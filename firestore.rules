@@ -28,10 +28,18 @@ service cloud.firestore {
 
     // Signups collection - users can manage their own signups, admins can see all
     match /signups/{signupId} {
-      allow read, write: if request.auth != null &&
-        resource.data.userId == request.auth.uid;
+      // Allow admins to read all signups
       allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+      // Allow users to read/write their own signups (with defensive check for userId)
+      allow read, write: if request.auth != null &&
+        resource != null &&
+        'userId' in resource.data &&
+        resource.data.userId == request.auth.uid;
+
+      // Allow users to create signups for themselves
       allow create: if request.auth != null &&
         request.resource.data.userId == request.auth.uid;
     }
