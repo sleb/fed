@@ -400,10 +400,7 @@ export default function CalendarPage() {
 
     setSaving(true);
     try {
-      await SignupService.updateSignup(selectedSignup.id, {
-        status: "cancelled",
-        updatedAt: new Date(),
-      });
+      await SignupService.deleteSignup(selectedSignup.id);
 
       // Refresh calendar data
       await loadCalendarData();

@@ -32,7 +32,6 @@ export interface UserData {
   stats: {
     totalSignups: number;
     completedDinners: number;
-    cancelledDinners: number;
     lastDinnerDate?: Date;
   };
   createdAt: Date;
@@ -91,7 +90,6 @@ export const createUserDocumentIfNotExists = async (
         stats: {
           totalSignups: 0,
           completedDinners: 0,
-          cancelledDinners: 0,
         },
         createdAt: new Date(),
         lastLoginAt: new Date(),

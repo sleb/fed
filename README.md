@@ -73,7 +73,6 @@ No pre-created database records for empty slots:
   stats: {
     totalSignups: number;
     completedDinners: number;
-    cancelledDinners: number;
     lastDinnerDate?: Date;
   };
   createdAt: Date;
@@ -131,7 +130,7 @@ Contains all slot information directly embedded:
   dinnerDate: Date;
   dayOfWeek: string;
   guestCount: number;            // Number of missionaries eating
-  status: "confirmed" | "pending" | "cancelled" | "completed";
+  status: "confirmed" | "pending" | "completed";
   contactPreference: "email" | "phone" | "both";
   reminderSent: boolean;
   notes?: string;
