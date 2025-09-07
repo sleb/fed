@@ -15,9 +15,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarService } from "@/lib/firebase/calendar";
-import { DinnerSlotService, SignupService } from "@/lib/firebase/firestore";
+import {
+  CompanionshipService,
+  DinnerSlotService,
+  MissionaryService,
+  SignupService,
+} from "@/lib/firebase/firestore";
 import { Companionship, DinnerSlot, Missionary, Signup } from "@/types";
 import {
+  AlertTriangle,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -26,6 +32,31 @@ import {
 } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
+
+// Debug function to check database state
+const debugDatabaseState = async () => {
+  try {
+    console.log("🔍 Debug: Checking database state...");
+
+    // Check slots directly
+    const allSlots = await DinnerSlotService.getAllSlots();
+    console.log("📅 All slots in database:", allSlots.length);
+    console.log("📅 Sample slots:", allSlots.slice(0, 3));
+
+    // Check companionships
+    const companionships = await CompanionshipService.getActiveCompanionships();
+    console.log("🤝 Active companionships:", companionships.length);
+
+    // Check missionaries
+    const missionaries = await MissionaryService.getActiveMissionaries();
+    console.log("👥 Active missionaries:", missionaries.length);
+
+    return { allSlots, companionships, missionaries };
+  } catch (error) {
+    console.error("❌ Debug error:", error);
+    return null;
+  }
+};
 
 interface CalendarDay {
   date: Date;
@@ -76,10 +107,19 @@ export default function CalendarPage() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
 
+      console.log(`🔍 Loading calendar data for ${year}-${month + 1}`);
+
       const calendarData = await CalendarService.getCalendarDataForMonth(
         year,
         month,
       );
+
+      console.log("📊 Calendar data received:", {
+        slots: calendarData.slots.length,
+        companionships: calendarData.companionships.size,
+        missionaries: calendarData.missionaries.size,
+      });
+
       setSlots(calendarData.slots);
       setCompanionships(calendarData.companionships);
       setMissionaries(calendarData.missionaries);
@@ -88,6 +128,15 @@ export default function CalendarPage() {
       if (user) {
         const signups = await SignupService.getSignupsByUser(user.uid);
         setUserSignups(signups);
+        console.log("👤 User signups:", signups.length);
+      }
+
+      // Run debug check if no slots found
+      if (calendarData.slots.length === 0) {
+        console.log(
+          "⚠️ No slots found for current month, running debug check...",
+        );
+        await debugDatabaseState();
       }
     } catch (err) {
       console.error("Error loading calendar data:", err);
@@ -98,6 +147,30 @@ export default function CalendarPage() {
   }, [currentDate, user]);
 
   const generateCalendarGrid = useCallback(() => {
+    console.log("🗓️ Generating calendar grid...");
+    console.log("📅 Total slots available:", slots.length);
+
+    if (slots.length > 0) {
+      console.log(
+        "📅 Sample slot dates:",
+        slots.slice(0, 3).map((slot) => {
+          const date = slot.date;
+          return {
+            original: date,
+            type: typeof date,
+            isFirestoreTimestamp:
+              date && typeof date === "object" && date.seconds,
+            converted: new Date(
+              date instanceof Date ? date : date?.toDate ? date.toDate() : date,
+            ),
+            dateString: new Date(
+              date instanceof Date ? date : date?.toDate ? date.toDate() : date,
+            ).toDateString(),
+          };
+        }),
+      );
+    }
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
@@ -116,12 +189,33 @@ export default function CalendarPage() {
 
     const days: CalendarDay[] = [];
     const currentDay = new Date(startDate);
+    let totalSlotsFound = 0;
 
     while (currentDay <= endDate) {
       const dateStr = currentDay.toDateString();
+
       const daySlots = slots.filter((slot) => {
-        const slotDate = new Date(slot.date);
-        return slotDate.toDateString() === dateStr;
+        // Handle different date formats (Firestore Timestamp, Date object, string)
+        let slotDate;
+        if (slot.date && typeof slot.date === "object" && slot.date.toDate) {
+          // Firestore Timestamp
+          slotDate = slot.date.toDate();
+        } else if (slot.date instanceof Date) {
+          // Already a Date object
+          slotDate = slot.date;
+        } else {
+          // String or other format
+          slotDate = new Date(slot.date);
+        }
+
+        const slotDateStr = slotDate.toDateString();
+        const matches = slotDateStr === dateStr;
+
+        if (matches) {
+          totalSlotsFound++;
+        }
+
+        return matches;
       });
 
       days.push({
@@ -131,6 +225,28 @@ export default function CalendarPage() {
       });
 
       currentDay.setDate(currentDay.getDate() + 1);
+    }
+
+    console.log(
+      `🗓️ Calendar grid generated: ${days.length} days, ${totalSlotsFound} slots matched`,
+    );
+
+    // Debug: Show days with slots
+    const daysWithSlots = days.filter((day) => day.slots.length > 0);
+    console.log(`📅 Days with slots: ${daysWithSlots.length}`);
+    if (daysWithSlots.length > 0) {
+      console.log(
+        "📅 Sample days with slots:",
+        daysWithSlots.slice(0, 3).map((day) => ({
+          date: day.date.toDateString(),
+          slotsCount: day.slots.length,
+          slots: day.slots.map((slot) => ({
+            id: slot.id,
+            companionshipId: slot.companionshipId,
+            status: slot.status,
+          })),
+        })),
+      );
     }
 
     setCalendarDays(days);
@@ -431,6 +547,68 @@ export default function CalendarPage() {
             {error}
           </div>
         )}
+
+        {/* Debug Info */}
+        {(slots.length === 0 ||
+          (slots.length > 0 &&
+            calendarDays.filter((day) => day.slots.length > 0).length === 0)) &&
+          !loading && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-yellow-800">
+                    {slots.length === 0
+                      ? "No Dinner Slots Found"
+                      : "Slots Not Displaying"}
+                  </h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    {slots.length === 0
+                      ? "No dinner slots are available for this month."
+                      : `Found ${slots.length} slots in database but none are showing in calendar.`}{" "}
+                    This could mean:
+                  </p>
+                  <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside space-y-1">
+                    {slots.length === 0 ? (
+                      <>
+                        <li>The database hasn't been seeded with test data</li>
+                        <li>
+                          No dinner slots have been created for this time period
+                        </li>
+                        <li>There may be a database connection issue</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>
+                          Date format mismatch between database and calendar
+                        </li>
+                        <li>
+                          Slots are for a different month than currently
+                          displayed
+                        </li>
+                        <li>
+                          Issue with date comparison in calendar grid generation
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                  <p className="text-sm text-yellow-700 mt-2">
+                    Check the browser console for debugging details.
+                    {slots.length > 0 &&
+                      ` Database contains ${slots.length} slots but calendar shows ${calendarDays.filter((day) => day.slots.length > 0).length} days with slots.`}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => debugDatabaseState()}
+                  >
+                    Run Database Debug Check
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* Legend */}
         <div className="mb-6 flex flex-wrap gap-4 text-sm">

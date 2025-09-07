@@ -10,11 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { updateUserRole } from "@/lib/firebase/auth";
 import { seedDatabase } from "@/lib/firebase/seedData";
 import {
   AlertTriangle,
   Calendar,
   Database,
+  UserCog,
   Users,
   Utensils,
 } from "lucide-react";
@@ -22,10 +24,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function AdminPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [makingAdmin, setMakingAdmin] = useState(false);
   const router = useRouter();
 
   const handleSeedDatabase = async () => {
@@ -43,6 +46,25 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Failed to seed database");
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const handleMakeAdmin = async () => {
+    if (!user) return;
+
+    setMakingAdmin(true);
+    setError(null);
+
+    try {
+      await updateUserRole(user.uid, "admin");
+      setSeedResult(
+        "You are now an admin! Please refresh the page to see updated permissions.",
+      );
+    } catch (err) {
+      console.error("Error making user admin:", err);
+      setError("Failed to update user role. Make sure you're authenticated.");
+    } finally {
+      setMakingAdmin(false);
     }
   };
 
@@ -163,6 +185,58 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* User Setup Section */}
+        {!isAdmin ? (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCog className="h-5 w-5" />
+                Setup Admin Access
+              </CardTitle>
+              <CardDescription>
+                Grant yourself admin permissions to access seeding and
+                management features
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <UserCog className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">
+                      Development Setup Required
+                    </h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      To test the admin features, you need admin permissions.
+                      Click the button below to grant yourself admin access in
+                      the development environment.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleMakeAdmin}
+                disabled={makingAdmin}
+                size="lg"
+                className="w-full md:w-auto"
+              >
+                {makingAdmin ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Setting Up Admin Access...
+                  </>
+                ) : (
+                  <>
+                    <UserCog className="h-4 w-4 mr-2" />
+                    Make Me Admin
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {/* Database Seeding Section */}
         <Card>

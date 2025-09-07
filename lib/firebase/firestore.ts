@@ -246,9 +246,14 @@ export class DinnerSlotService {
     startDate: string,
     endDate: string,
   ): Promise<DinnerSlot[]> {
+    // Convert string dates to Date objects for Firestore comparison
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999); // Include entire end date
+
     return FirestoreService.getDocuments<DinnerSlot>(this.collectionName, [
-      where("date", ">=", startDate),
-      where("date", "<=", endDate),
+      where("date", ">=", startDateObj),
+      where("date", "<=", endDateObj),
       orderBy("date"),
     ]);
   }
