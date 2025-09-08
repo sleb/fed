@@ -1,4 +1,47 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "companionships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "area",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "missionaries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "signups",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "companionshipId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dinnerDate",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
