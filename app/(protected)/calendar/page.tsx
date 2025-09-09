@@ -73,6 +73,8 @@ export default function CalendarPage() {
 
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
   const [slots, setSlots] = useState<VirtualDinnerSlot[]>([]);
   const [companionships, setCompanionships] = useState<
@@ -238,6 +240,81 @@ export default function CalendarPage() {
   useEffect(() => {
     generateCalendarGrid();
   }, [generateCalendarGrid]);
+
+  // Generate mini calendar for navigation widget
+  const generateMiniCalendar = useCallback(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+    const miniDays = [];
+    const current = new Date(startDate);
+
+    while (current <= lastDay || miniDays.length < 42) {
+      const daySlots = slots.filter(
+        (slot) => slot.date.toDateString() === current.toDateString(),
+      );
+
+      miniDays.push({
+        date: new Date(current),
+        isCurrentMonth: current.getMonth() === month,
+        hasSlots: daySlots.length > 0,
+        isSelected: current.toDateString() === selectedDate.toDateString(),
+        isToday: current.toDateString() === new Date().toDateString(),
+      });
+
+      current.setDate(current.getDate() + 1);
+      if (miniDays.length >= 42) break;
+    }
+
+    return miniDays;
+  }, [currentDate, selectedDate, slots]);
+
+  // Get filtered days based on view mode
+  const getFilteredDays = useCallback(() => {
+    switch (viewMode) {
+      case "day":
+        return calendarDays.filter(
+          (day) => day.date.toDateString() === selectedDate.toDateString(),
+        );
+      case "week":
+        const startOfWeek = new Date(selectedDate);
+        startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        return calendarDays.filter(
+          (day) => day.date >= startOfWeek && day.date <= endOfWeek,
+        );
+      default:
+        return calendarDays;
+    }
+  }, [calendarDays, selectedDate, viewMode]);
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setViewMode("day");
+  };
+
+  const handleViewChange = (mode: "month" | "week" | "day") => {
+    setViewMode(mode);
+    // Remember user preference
+    localStorage.setItem("calendar-view-mode", mode);
+  };
+
+  // Load saved view preference
+  useEffect(() => {
+    const savedMode = localStorage.getItem("calendar-view-mode") as
+      | "month"
+      | "week"
+      | "day";
+    if (savedMode) {
+      setViewMode(savedMode);
+    }
+  }, []);
 
   const getCompanionshipName = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
@@ -499,68 +576,294 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        {/* Calendar Navigation */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="outline"
-            onClick={() => navigateMonth("prev")}
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-
-          <h2 className="text-2xl font-semibold text-gray-900">
-            {currentDate.toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}
-          </h2>
-
-          <Button
-            variant="outline"
-            onClick={() => navigateMonth("next")}
-            className="flex items-center gap-2"
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Days of week header */}
-          <div className="grid grid-cols-7 bg-gray-50 border-b">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div
-                key={day}
-                className="p-3 text-center font-medium text-gray-700"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar days */}
-          <div className="grid grid-cols-7">
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                className={`min-h-[120px] border-b border-r border-gray-200 p-2 ${
-                  !day.isCurrentMonth ? "bg-gray-50" : ""
-                }`}
-              >
-                <div
-                  className={`text-sm font-medium mb-2 ${
-                    !day.isCurrentMonth ? "text-gray-400" : "text-gray-900"
-                  }`}
+        {/* Navigation Widget */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Mini Calendar */}
+            <div className="flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigateMonth("prev")}
                 >
-                  {day.date.getDate()}
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h3 className="font-semibold text-gray-900">
+                  {currentDate.toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigateMonth("next")}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Mini calendar grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {[
+                  { short: "S", key: "sun" },
+                  { short: "M", key: "mon" },
+                  { short: "T", key: "tue" },
+                  { short: "W", key: "wed" },
+                  { short: "T", key: "thu" },
+                  { short: "F", key: "fri" },
+                  { short: "S", key: "sat" },
+                ].map((day) => (
+                  <div
+                    key={day.key}
+                    className="text-xs text-center text-gray-500 font-medium p-1"
+                  >
+                    {day.short}
+                  </div>
+                ))}
+                {generateMiniCalendar().map((day, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleDateSelect(day.date)}
+                    className={`
+                      text-xs p-1 rounded transition-colors relative
+                      ${
+                        !day.isCurrentMonth
+                          ? "text-gray-300"
+                          : day.isSelected
+                            ? "bg-blue-500 text-white"
+                            : day.isToday
+                              ? "bg-blue-100 text-blue-600 font-medium"
+                              : "text-gray-700 hover:bg-gray-100"
+                      }
+                    `}
+                  >
+                    {day.date.getDate()}
+                    {day.hasSlots && day.isCurrentMonth && (
+                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full"></div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* View Mode Controls */}
+            <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">
+                    {viewMode === "day"
+                      ? selectedDate.toLocaleDateString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : viewMode === "week"
+                        ? `Week of ${selectedDate.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}`
+                        : currentDate.toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })}
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    {viewMode === "day"
+                      ? "Viewing all dinner slots for this day"
+                      : viewMode === "week"
+                        ? "Viewing dinner slots for this week"
+                        : "Viewing all dinner slots for this month"}
+                  </p>
                 </div>
 
-                {/* Slots for this day */}
-                <div className="space-y-1">
-                  {day.slots.map((slot) => {
+                {/* View mode buttons */}
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => handleViewChange("month")}
+                    className={`
+                      px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+                      ${
+                        viewMode === "month"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }
+                    `}
+                  >
+                    Month
+                  </button>
+                  <button
+                    onClick={() => handleViewChange("week")}
+                    className={`
+                      px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+                      ${
+                        viewMode === "week"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }
+                    `}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => handleViewChange("day")}
+                    className={`
+                      px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+                      ${
+                        viewMode === "day"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }
+                    `}
+                  >
+                    Day
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Calendar Grid */}
+        <div className="hidden md:block bg-white rounded-lg shadow-lg overflow-hidden">
+          {viewMode === "month" && (
+            <>
+              {/* Days of week header */}
+              <div className="grid grid-cols-7 bg-gray-50 border-b">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (day) => (
+                    <div
+                      key={day}
+                      className="p-3 text-center font-medium text-gray-700"
+                    >
+                      {day}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {/* Calendar days */}
+              <div className="grid grid-cols-7">
+                {calendarDays.map((day, index) => (
+                  <div
+                    key={index}
+                    className={`min-h-[120px] border-b border-r border-gray-200 p-2 ${
+                      !day.isCurrentMonth ? "bg-gray-50" : ""
+                    }`}
+                  >
+                    <div
+                      className={`text-sm font-medium mb-2 ${
+                        !day.isCurrentMonth ? "text-gray-400" : "text-gray-900"
+                      }`}
+                    >
+                      {day.date.getDate()}
+                    </div>
+
+                    {/* Slots for this day */}
+                    <div className="space-y-1">
+                      {day.slots.map((slot) => {
+                        const companionship = companionships.get(
+                          slot.companionshipId,
+                        );
+                        if (!companionship) return null;
+
+                        return (
+                          <div
+                            key={`${slot.companionshipId}-${slot.date.getTime()}`}
+                            className={`text-xs p-2 rounded border ${getSlotStatusColor(
+                              slot,
+                            )}`}
+                            onClick={() => handleSlotClick(slot)}
+                          >
+                            <div className="font-medium truncate">
+                              {getCompanionshipName(companionship)}
+                            </div>
+                            <div className="opacity-75">
+                              {getSlotStatusText(slot)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {viewMode === "week" && (
+            <>
+              {/* Days of week header */}
+              <div className="grid grid-cols-7 bg-gray-50 border-b">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (day) => (
+                    <div
+                      key={day}
+                      className="p-3 text-center font-medium text-gray-700"
+                    >
+                      {day}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {/* Week days */}
+              <div className="grid grid-cols-7">
+                {getFilteredDays().map((day, index) => (
+                  <div
+                    key={index}
+                    className="min-h-[140px] border-b border-r border-gray-200 p-2"
+                  >
+                    <div className="text-sm font-medium mb-2 text-gray-900">
+                      {day.date.getDate()}
+                    </div>
+
+                    {/* Slots for this day */}
+                    <div className="space-y-1">
+                      {day.slots.map((slot) => {
+                        const companionship = companionships.get(
+                          slot.companionshipId,
+                        );
+                        if (!companionship) return null;
+
+                        return (
+                          <div
+                            key={`${slot.companionshipId}-${slot.date.getTime()}`}
+                            className={`text-xs p-2 rounded border ${getSlotStatusColor(
+                              slot,
+                            )}`}
+                            onClick={() => handleSlotClick(slot)}
+                          >
+                            <div className="font-medium truncate">
+                              {getCompanionshipName(companionship)}
+                            </div>
+                            <div className="opacity-75">
+                              {getSlotStatusText(slot)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {viewMode === "day" && (
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4 text-center">
+                {selectedDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </h3>
+              {getFilteredDays().length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {getFilteredDays()[0]?.slots.map((slot) => {
                     const companionship = companionships.get(
                       slot.companionshipId,
                     );
@@ -569,16 +872,105 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={`${slot.companionshipId}-${slot.date.getTime()}`}
-                        className={`text-xs p-2 rounded border ${getSlotStatusColor(
+                        className={`p-4 rounded border ${getSlotStatusColor(
                           slot,
                         )}`}
                         onClick={() => handleSlotClick(slot)}
                       >
-                        <div className="font-medium truncate">
+                        <div className="font-medium text-sm mb-1">
                           {getCompanionshipName(companionship)}
                         </div>
-                        <div className="opacity-75">
+                        <div className="text-xs text-gray-600 mb-2">
+                          {companionship.area} • {companionship.address}
+                        </div>
+                        <div className="text-xs opacity-75">
                           {getSlotStatusText(slot)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  No dinner slots available for this day
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile List View */}
+        <div className="md:hidden space-y-4">
+          {getFilteredDays()
+            .filter((day) => day.slots.length > 0)
+            .map((day, dayIndex) => (
+              <div
+                key={dayIndex}
+                className="bg-white rounded-lg shadow-sm border"
+              >
+                <div className="px-4 py-3 border-b bg-gray-50 rounded-t-lg">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {day.date.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  {day.slots.map((slot) => {
+                    const companionship = companionships.get(
+                      slot.companionshipId,
+                    );
+                    if (!companionship) return null;
+
+                    const isUserSignup = isUserSignedUpForSlot(slot);
+                    const statusColor = isUserSignup
+                      ? "border-blue-200 bg-blue-50"
+                      : slot.status === "taken"
+                        ? "border-gray-200 bg-gray-50"
+                        : "border-green-200 bg-green-50";
+
+                    return (
+                      <div
+                        key={`${slot.companionshipId}-${slot.date.getTime()}`}
+                        className={`p-4 rounded-lg border ${statusColor} transition-all duration-200 active:scale-[0.98]`}
+                        onClick={() => handleSlotClick(slot)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 mb-1">
+                              {getCompanionshipName(companionship)}
+                            </div>
+                            <div className="text-sm text-gray-600 mb-2">
+                              {companionship.area} • {companionship.address}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="font-medium">
+                                {getSlotStatusText(slot)}
+                              </span>
+                              {slot.guestCount > 1 && (
+                                <span className="text-gray-500">
+                                  • {slot.guestCount} guests
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-3 flex-shrink-0">
+                            {isUserSignup ? (
+                              <div className="text-blue-600 text-sm font-medium">
+                                Your Signup
+                              </div>
+                            ) : slot.status === "available" ? (
+                              <div className="text-green-600 text-sm font-medium">
+                                Available
+                              </div>
+                            ) : (
+                              <div className="text-gray-500 text-sm font-medium">
+                                Taken
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -586,7 +978,20 @@ export default function CalendarPage() {
                 </div>
               </div>
             ))}
-          </div>
+
+          {getFilteredDays().filter((day) => day.slots.length > 0).length ===
+            0 && (
+            <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+              <div className="text-gray-500 mb-2">
+                No dinner slots available for this {viewMode}
+              </div>
+              <div className="text-sm text-gray-400">
+                {viewMode === "day"
+                  ? "Try selecting a different day or switching to week/month view"
+                  : "Check back later or contact your admin"}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Legend */}
