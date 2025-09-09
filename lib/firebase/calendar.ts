@@ -1,4 +1,5 @@
 import { Companionship, Missionary, Signup, VirtualDinnerSlot } from "@/types";
+import { Unsubscribe } from "firebase/firestore";
 import {
   CompanionshipService,
   MissionaryService,
@@ -264,5 +265,137 @@ export class CalendarService {
 
     const dayOfWeek = date.getDay();
     return companionship.daysOfWeek.includes(dayOfWeek);
+  }
+
+  // Subscribe to calendar data with real-time updates
+  static subscribeToCalendarDataForMonth(
+    year: number,
+    month: number,
+    onUpdate: (data: {
+      slots: VirtualDinnerSlot[];
+      companionships: Map<string, Companionship>;
+      missionaries: Map<string, Missionary>;
+    }) => void,
+    onError?: (error: Error) => void,
+  ): Unsubscribe {
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+
+    const companionships = new Map<string, Companionship>();
+    const missionaries = new Map<string, Missionary>();
+    let signups: Signup[] = [];
+
+    // Track subscription states
+    let companionshipsLoaded = false;
+    let missionariesLoaded = false;
+    let signupsLoaded = false;
+
+    const updateCalendarData = () => {
+      // Only update when all data is loaded
+      if (!companionshipsLoaded || !missionariesLoaded || !signupsLoaded) {
+        return;
+      }
+
+      try {
+        // Generate virtual slots from companionships
+        const allVirtualSlots: VirtualDinnerSlot[] = [];
+
+        for (const companionship of companionships.values()) {
+          const companionshipSlots = this.generateVirtualSlotsForCompanionship(
+            companionship,
+            startDate,
+            endDate,
+          );
+          allVirtualSlots.push(...companionshipSlots);
+        }
+
+        // Map signups by companionship + date for efficient lookup
+        const signupMap = new Map<string, Signup>();
+        signups.forEach((signup) => {
+          try {
+            const signupDate = toDate(signup.dinnerDate);
+            const key = `${signup.companionshipId}-${signupDate.toDateString()}`;
+            signupMap.set(key, signup);
+          } catch (error) {
+            console.error("Error processing signup date:", {
+              signupId: signup.id,
+              dinnerDate: signup.dinnerDate,
+              dateType: typeof signup.dinnerDate,
+              error: error,
+            });
+          }
+        });
+
+        // Mark slots as taken where signups exist
+        allVirtualSlots.forEach((slot) => {
+          const key = `${slot.companionshipId}-${slot.date.toDateString()}`;
+          const signup = signupMap.get(key);
+          if (signup) {
+            slot.status = "taken";
+            slot.signup = signup;
+          }
+        });
+
+        onUpdate({
+          slots: allVirtualSlots,
+          companionships,
+          missionaries,
+        });
+      } catch (error) {
+        console.error("Error updating calendar data:", error);
+        if (onError) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+    };
+
+    // Subscribe to companionships
+    const unsubscribeCompanionships =
+      CompanionshipService.subscribeToAllCompanionships(
+        (updatedCompanionships) => {
+          companionships.clear();
+          updatedCompanionships.forEach((companionship) => {
+            companionships.set(companionship.id, companionship);
+          });
+          companionshipsLoaded = true;
+          updateCalendarData();
+        },
+        onError,
+      );
+
+    // Subscribe to signups in the date range
+    const unsubscribeSignups = SignupService.subscribeToSignupsInDateRange(
+      startDate,
+      endDate,
+      (updatedSignups) => {
+        signups = updatedSignups;
+        signupsLoaded = true;
+        updateCalendarData();
+      },
+      onError,
+    );
+
+    // Load missionaries once (they don't change as frequently)
+    MissionaryService.getAllMissionaries()
+      .then((allMissionaries) => {
+        missionaries.clear();
+        allMissionaries.forEach((missionary) => {
+          missionaries.set(missionary.id, missionary);
+        });
+        missionariesLoaded = true;
+        updateCalendarData();
+      })
+      .catch((error) => {
+        console.error("Error loading missionaries:", error);
+        if (onError) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
+      });
+
+    // Return combined unsubscribe function
+    return () => {
+      unsubscribeCompanionships();
+      unsubscribeSignups();
+    };
   }
 }

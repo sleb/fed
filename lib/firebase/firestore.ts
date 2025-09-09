@@ -6,9 +6,11 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   QueryConstraint,
+  Unsubscribe,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -35,6 +37,49 @@ export class FirestoreService {
     } catch (error) {
       console.error(`Error getting document from ${collectionName}:`, error);
       throw error;
+    }
+  }
+
+  // Subscribe to documents with real-time updates
+  static subscribeToDocuments<T>(
+    collectionName: string,
+    onUpdate: (documents: T[]) => void,
+    onError?: (error: Error) => void,
+    constraints: QueryConstraint[] = [],
+  ): Unsubscribe {
+    try {
+      const collectionRef = collection(db, collectionName);
+      const q =
+        constraints.length > 0
+          ? query(collectionRef, ...constraints)
+          : collectionRef;
+
+      return onSnapshot(
+        q,
+        (querySnapshot) => {
+          const documents = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as T[];
+          onUpdate(documents);
+        },
+        (error) => {
+          console.error(`Error in subscription to ${collectionName}:`, error);
+          if (onError) {
+            onError(error);
+          }
+        },
+      );
+    } catch (error) {
+      console.error(
+        `Error setting up subscription to ${collectionName}:`,
+        error,
+      );
+      if (onError) {
+        onError(error instanceof Error ? error : new Error(String(error)));
+      }
+      // Return a no-op unsubscribe function
+      return () => {};
     }
   }
 
@@ -209,6 +254,19 @@ export class CompanionshipService {
   static async deleteCompanionship(id: string): Promise<void> {
     return FirestoreService.deleteDocument(this.collectionName, id);
   }
+
+  // Subscribe to all companionships with real-time updates
+  static subscribeToAllCompanionships(
+    onUpdate: (companionships: Companionship[]) => void,
+    onError?: (error: Error) => void,
+  ): Unsubscribe {
+    return FirestoreService.subscribeToDocuments<Companionship>(
+      this.collectionName,
+      onUpdate,
+      onError,
+      [orderBy("area")],
+    );
+  }
 }
 
 // Signup-specific operations
@@ -221,6 +279,46 @@ export class SignupService {
       where("userId", "==", userId),
       orderBy("createdAt", "desc"),
     ]);
+  }
+
+  // Subscribe to signups in date range with real-time updates
+  static subscribeToSignupsInDateRange(
+    startDate: Date,
+    endDate: Date,
+    onUpdate: (signups: Signup[]) => void,
+    onError?: (error: Error) => void,
+  ): Unsubscribe {
+    return FirestoreService.subscribeToDocuments<Signup>(
+      this.collectionName,
+      onUpdate,
+      onError,
+      [
+        where("dinnerDate", ">=", startDate),
+        where("dinnerDate", "<=", endDate),
+        orderBy("dinnerDate"),
+      ],
+    );
+  }
+
+  // Subscribe to signups for a specific companionship in date range
+  static subscribeToSignupsByCompanionshipInDateRange(
+    companionshipId: string,
+    startDate: Date,
+    endDate: Date,
+    onUpdate: (signups: Signup[]) => void,
+    onError?: (error: Error) => void,
+  ): Unsubscribe {
+    return FirestoreService.subscribeToDocuments<Signup>(
+      this.collectionName,
+      onUpdate,
+      onError,
+      [
+        where("companionshipId", "==", companionshipId),
+        where("dinnerDate", ">=", startDate),
+        where("dinnerDate", "<=", endDate),
+        orderBy("dinnerDate"),
+      ],
+    );
   }
 
   static async getSignupsByCompanionship(

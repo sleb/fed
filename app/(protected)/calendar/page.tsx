@@ -128,45 +128,55 @@ export default function CalendarPage() {
     notes: "",
   });
 
-  const loadCalendarData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-
-      console.log(`🔍 Loading calendar data for ${year}-${month + 1}`);
-
-      const calendarData = await CalendarService.getCalendarDataForMonth(
-        year,
-        month,
-      );
-
-      console.log("📊 Calendar data received:", {
-        slots: calendarData.slots.length,
-        companionships: calendarData.companionships.size,
-        missionaries: calendarData.missionaries.size,
-      });
-
-      setSlots(calendarData.slots);
-      setCompanionships(calendarData.companionships);
-      setMissionaries(calendarData.missionaries);
-
-      // Run debug check if no slots found
-      if (calendarData.slots.length === 0) {
-        console.log(
-          "⚠️ No virtual slots generated for current month, running debug check...",
-        );
-        await debugDatabaseState();
-      }
-    } catch (err) {
-      console.error("Error loading calendar data:", err);
-      setError("Failed to load calendar data");
-    } finally {
-      setLoading(false);
+  // Subscribe to real-time calendar data updates
+  useEffect(() => {
+    if (!user) {
+      return;
     }
-  }, [currentDate]);
+
+    setLoading(true);
+    setError(null);
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    console.log(`🔍 Subscribing to calendar data for ${year}-${month + 1}`);
+
+    const unsubscribe = CalendarService.subscribeToCalendarDataForMonth(
+      year,
+      month,
+      (calendarData) => {
+        console.log("📊 Real-time calendar data received:", {
+          slots: calendarData.slots.length,
+          companionships: calendarData.companionships.size,
+          missionaries: calendarData.missionaries.size,
+        });
+
+        setSlots(calendarData.slots);
+        setCompanionships(calendarData.companionships);
+        setMissionaries(calendarData.missionaries);
+        setLoading(false);
+
+        // Run debug check if no slots found
+        if (calendarData.slots.length === 0) {
+          console.log(
+            "⚠️ No virtual slots generated for current month, running debug check...",
+          );
+          debugDatabaseState();
+        }
+      },
+      (error) => {
+        console.error("Error in calendar data subscription:", error);
+        setError("Failed to load calendar data");
+        setLoading(false);
+      },
+    );
+
+    return () => {
+      console.log("🔌 Unsubscribing from calendar data");
+      unsubscribe();
+    };
+  }, [user, currentDate]);
 
   const generateCalendarGrid = useCallback(() => {
     console.log("🗓️ Generating calendar grid...");
@@ -260,13 +270,6 @@ export default function CalendarPage() {
 
     setCalendarDays(days);
   }, [currentDate, slots, selectedCompanionshipId]);
-
-  // Load calendar data when month changes
-  useEffect(() => {
-    if (user) {
-      loadCalendarData();
-    }
-  }, [user, loadCalendarData]);
 
   // Generate calendar grid
   useEffect(() => {
@@ -539,9 +542,6 @@ export default function CalendarPage() {
         updatedAt: new Date(),
       });
 
-      // Refresh calendar data
-      await loadCalendarData();
-
       setShowSignupModal(false);
       setSelectedSlot(null);
       setContactInfoOpen(false);
@@ -566,9 +566,6 @@ export default function CalendarPage() {
         updatedAt: new Date(),
       });
 
-      // Refresh calendar data
-      await loadCalendarData();
-
       setShowModifyModal(false);
       setSelectedSlot(null);
       setSelectedSignup(null);
@@ -586,9 +583,6 @@ export default function CalendarPage() {
     setSaving(true);
     try {
       await SignupService.deleteSignup(selectedSignup.id);
-
-      // Refresh calendar data
-      await loadCalendarData();
 
       setShowModifyModal(false);
       setSelectedSlot(null);
@@ -650,7 +644,7 @@ export default function CalendarPage() {
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-600 mx-auto" />
           <p className="mt-4 text-lg text-red-600">{error}</p>
-          <Button onClick={loadCalendarData} className="mt-4">
+          <Button onClick={() => window.location.reload()} className="mt-4">
             Try Again
           </Button>
         </div>
