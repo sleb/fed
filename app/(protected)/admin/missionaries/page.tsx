@@ -293,19 +293,19 @@ export default function MissionariesPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.back()}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-fit"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   Missionary Management
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -313,7 +313,11 @@ export default function MissionariesPage() {
                 </p>
               </div>
             </div>
-            <Button onClick={openAddModal} className="flex items-center gap-2">
+            {/* Desktop Add Button */}
+            <Button
+              onClick={openAddModal}
+              className="hidden lg:flex items-center gap-2"
+            >
               <UserPlus className="h-4 w-4" />
               Add Missionary
             </Button>
@@ -801,6 +805,16 @@ export default function MissionariesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Floating Action Button */}
+      <Button
+        onClick={openAddModal}
+        className="lg:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow z-50"
+        size="icon"
+      >
+        <UserPlus className="h-6 w-6" />
+        <span className="sr-only">Add Missionary</span>
+      </Button>
     </div>
   );
 }

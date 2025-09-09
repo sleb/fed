@@ -481,8 +481,8 @@ export default function CompanionshipsPage() {
                 Back to Admin
               </Button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="h-6 w-6 sm:h-8 sm:w-8" />
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                  <Users className="h-5 w-5 sm:h-8 sm:w-8" />
                   Companionship Management
                 </h1>
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">
@@ -490,9 +490,10 @@ export default function CompanionshipsPage() {
                 </p>
               </div>
             </div>
+            {/* Desktop Add Button */}
             <Button
               onClick={openAddModal}
-              className="flex items-center gap-2 w-full sm:w-fit"
+              className="hidden lg:flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               Add Companionship
@@ -1307,6 +1308,16 @@ export default function CompanionshipsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Floating Action Button */}
+      <Button
+        onClick={openAddModal}
+        className="lg:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow z-50"
+        size="icon"
+      >
+        <Plus className="h-6 w-6" />
+        <span className="sr-only">Add Companionship</span>
+      </Button>
     </div>
   );
 }
