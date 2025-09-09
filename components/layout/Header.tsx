@@ -11,6 +11,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -181,6 +182,11 @@ export function Header() {
                 <SheetHeader>
                   <VisuallyHidden>
                     <SheetTitle>Navigation Menu</SheetTitle>
+                  </VisuallyHidden>
+                  <VisuallyHidden>
+                    <SheetDescription>
+                      Access navigation links and user account options
+                    </SheetDescription>
                   </VisuallyHidden>
                 </SheetHeader>
                 <div className="flex flex-col space-y-6 pt-6">
