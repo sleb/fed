@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
 import { Button } from "@/components/ui/button";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { useAuth } from "@/hooks/useAuth";
 import { logOut } from "@/lib/firebase/auth";
-import {
-    Calendar,
-    Home,
-    LogOut,
-    Menu,
-    Settings,
-    User
-} from "lucide-react";
+import { Calendar, Home, LogOut, Menu, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -98,9 +98,7 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
-                  isActive(item.href)
-                    ? "text-primary"
-                    : "text-slate-600"
+                  isActive(item.href) ? "text-primary" : "text-slate-600"
                 }`}
               >
                 {item.icon}
@@ -116,19 +114,29 @@ export function Header() {
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center space-x-2"
+                  >
                     <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                       <User className="h-4 w-4" />
                     </div>
                     <div className="hidden sm:block text-left">
-                      <div className="text-sm font-medium">{userData?.name || user.displayName}</div>
-                      <div className="text-xs text-slate-500 capitalize">{userData?.role || "member"}</div>
+                      <div className="text-sm font-medium">
+                        {userData?.name || user.displayName}
+                      </div>
+                      <div className="text-xs text-slate-500 capitalize">
+                        {userData?.role || "member"}
+                      </div>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <div className="font-medium">{userData?.name || user.displayName}</div>
+                    <div className="font-medium">
+                      {userData?.name || user.displayName}
+                    </div>
                     <div className="text-sm text-slate-500">{user.email}</div>
                     <div className="text-xs text-slate-400 capitalize mt-1">
                       {userData?.role || "member"}
@@ -146,7 +154,10 @@ export function Header() {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="text-red-600"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </DropdownMenuItem>
@@ -167,6 +178,11 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <VisuallyHidden>
+                    <SheetTitle>Navigation Menu</SheetTitle>
+                  </VisuallyHidden>
+                </SheetHeader>
                 <div className="flex flex-col space-y-6 pt-6">
                   {/* User Info */}
                   {user && (
@@ -175,8 +191,12 @@ export function Header() {
                         <User className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{userData?.name || user.displayName}</div>
-                        <div className="text-sm text-slate-500 truncate">{user.email}</div>
+                        <div className="font-medium truncate">
+                          {userData?.name || user.displayName}
+                        </div>
+                        <div className="text-sm text-slate-500 truncate">
+                          {user.email}
+                        </div>
                         <div className="text-xs text-slate-400 capitalize">
                           {userData?.role || "member"}
                         </div>
@@ -228,7 +248,10 @@ export function Header() {
                     </div>
                   ) : (
                     <Button asChild className="w-full">
-                      <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                      <Link
+                        href="/login"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
                         Sign In
                       </Link>
                     </Button>
