@@ -2,6 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -19,7 +24,12 @@ import {
   SignupService,
 } from "@/lib/firebase/firestore";
 import { Companionship, Missionary, Signup, VirtualDinnerSlot } from "@/types";
-import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 
 import { useCallback, useEffect, useState } from "react";
@@ -81,6 +91,8 @@ export default function CalendarPage() {
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showModifyModal, setShowModifyModal] = useState(false);
   const [selectedSignup, setSelectedSignup] = useState<Signup | null>(null);
+  const [contactInfoOpen, setContactInfoOpen] = useState(false);
+  const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Form state
@@ -325,6 +337,8 @@ export default function CalendarPage() {
         contactPreference: mappedContactPreference,
         notes: "",
       });
+      setContactInfoOpen(false);
+      setAdditionalInfoOpen(false);
       setShowSignupModal(true);
     }
   };
@@ -361,6 +375,8 @@ export default function CalendarPage() {
 
       setShowSignupModal(false);
       setSelectedSlot(null);
+      setContactInfoOpen(false);
+      setAdditionalInfoOpen(false);
     } catch (error) {
       console.error("Signup error:", error);
       alert("Failed to sign up. Please try again.");
@@ -593,7 +609,16 @@ export default function CalendarPage() {
         </div>
 
         {/* Signup Modal */}
-        <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
+        <Dialog
+          open={showSignupModal}
+          onOpenChange={(open) => {
+            setShowSignupModal(open);
+            if (!open) {
+              setContactInfoOpen(false);
+              setAdditionalInfoOpen(false);
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Sign Up for Dinner</DialogTitle>
@@ -624,23 +649,21 @@ export default function CalendarPage() {
                     </p>
                   </div>
 
-                  {/* Dietary Information */}
+                  {/* Allergies Information */}
                   {(() => {
                     const companionship = companionships.get(
                       selectedSlot.companionshipId,
                     )!;
                     const allergies = getAggregatedAllergies(companionship);
-                    const preferences = getAggregatedPreferences(companionship);
-                    const notes = getAggregatedNotes(companionship);
 
                     return (
                       <div className="space-y-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                         <h4 className="font-medium text-yellow-800 flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4" />
-                          Dietary Information
+                          Allergies
                         </h4>
 
-                        {allergies.length > 0 && (
+                        {allergies.length > 0 ? (
                           <div>
                             <span className="font-medium text-red-700">
                               Allergies:{" "}
@@ -649,36 +672,64 @@ export default function CalendarPage() {
                               {allergies.join(", ")}
                             </span>
                           </div>
+                        ) : (
+                          <p className="text-yellow-700">No known allergies</p>
                         )}
-
-                        {preferences.length > 0 && (
-                          <div>
-                            <span className="font-medium text-blue-700">
-                              Preferences:{" "}
-                            </span>
-                            <span className="text-blue-600">
-                              {preferences.join(", ")}
-                            </span>
-                          </div>
-                        )}
-
-                        {notes && (
-                          <div>
-                            <span className="font-medium text-gray-700">
-                              Notes:{" "}
-                            </span>
-                            <span className="text-gray-600">{notes}</span>
-                          </div>
-                        )}
-
-                        {allergies.length === 0 &&
-                          preferences.length === 0 &&
-                          !notes && (
-                            <p className="text-gray-600">
-                              No special dietary requirements
-                            </p>
-                          )}
                       </div>
+                    );
+                  })()}
+
+                  {/* Additional Info (Preferences & Notes) */}
+                  {(() => {
+                    const companionship = companionships.get(
+                      selectedSlot.companionshipId,
+                    )!;
+                    const preferences = getAggregatedPreferences(companionship);
+                    const notes = getAggregatedNotes(companionship);
+
+                    // Only show if there are preferences or notes
+                    if (preferences.length === 0 && !notes) return null;
+
+                    return (
+                      <Collapsible
+                        open={additionalInfoOpen}
+                        onOpenChange={setAdditionalInfoOpen}
+                      >
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg">
+                          <CollapsibleTrigger className="w-full p-3 flex items-center justify-between text-left hover:bg-blue-100 transition-colors rounded-t-lg [&[data-state=open]]:rounded-b-none">
+                            <h4 className="font-medium text-blue-800">
+                              Additional Info
+                            </h4>
+                            <ChevronDown
+                              className={`h-4 w-4 text-blue-600 transition-transform duration-200 ${additionalInfoOpen ? "rotate-180" : ""}`}
+                            />
+                          </CollapsibleTrigger>
+
+                          <CollapsibleContent className="overflow-hidden">
+                            <div className="px-3 pb-3 space-y-2 text-sm border-t border-blue-200">
+                              {preferences.length > 0 && (
+                                <div>
+                                  <span className="font-medium text-blue-700">
+                                    Preferences:{" "}
+                                  </span>
+                                  <span className="text-blue-600">
+                                    {preferences.join(", ")}
+                                  </span>
+                                </div>
+                              )}
+
+                              {notes && (
+                                <div>
+                                  <span className="font-medium text-gray-700">
+                                    Notes:{" "}
+                                  </span>
+                                  <span className="text-gray-600">{notes}</span>
+                                </div>
+                              )}
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
                     );
                   })()}
                 </div>
@@ -686,45 +737,63 @@ export default function CalendarPage() {
 
             {/* Your Contact Information */}
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-blue-800">
-                    Your Contact Information
-                  </h4>
-                  <Link
-                    href="/profile"
-                    className="text-blue-600 hover:text-blue-800 text-sm underline"
-                    onClick={() => setShowSignupModal(false)}
-                  >
-                    Edit Profile
-                  </Link>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium">Email:</span> {user?.email}
-                  </div>
-                  {userData?.phone && (
-                    <div>
-                      <span className="font-medium">Phone:</span>{" "}
-                      {userData.phone}
+              <Collapsible
+                open={contactInfoOpen}
+                onOpenChange={setContactInfoOpen}
+              >
+                <div className="bg-blue-50 border border-blue-200 rounded-lg">
+                  <CollapsibleTrigger className="w-full p-4 flex items-center justify-between text-left hover:bg-blue-100 transition-colors rounded-t-lg [&[data-state=open]]:rounded-b-none">
+                    <h4 className="font-medium text-blue-800">
+                      Your Contact Information
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href="/profile"
+                        className="text-blue-600 hover:text-blue-800 text-sm underline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSignupModal(false);
+                        }}
+                      >
+                        Edit Profile
+                      </Link>
+                      <ChevronDown
+                        className={`h-4 w-4 text-blue-600 transition-transform duration-200 ${contactInfoOpen ? "rotate-180" : ""}`}
+                      />
                     </div>
-                  )}
-                  {userData?.address && (
-                    <div>
-                      <span className="font-medium">Address:</span>{" "}
-                      {userData.address}
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="overflow-hidden">
+                    <div className="px-4 pb-4 space-y-2 text-sm border-t border-blue-200">
+                      <div>
+                        <span className="font-medium">Email:</span>{" "}
+                        {user?.email}
+                      </div>
+                      {userData?.phone && (
+                        <div>
+                          <span className="font-medium">Phone:</span>{" "}
+                          {userData.phone}
+                        </div>
+                      )}
+                      {userData?.address && (
+                        <div>
+                          <span className="font-medium">Address:</span>{" "}
+                          {userData.address}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-medium">Preferred contact:</span>{" "}
+                        {userData?.preferences?.contactMethod === "email" &&
+                          "Email"}
+                        {userData?.preferences?.contactMethod === "sms" &&
+                          "SMS"}
+                        {userData?.preferences?.contactMethod === "both" &&
+                          "Email & SMS"}
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <span className="font-medium">Preferred contact:</span>{" "}
-                    {userData?.preferences?.contactMethod === "email" &&
-                      "Email"}
-                    {userData?.preferences?.contactMethod === "sms" && "SMS"}
-                    {userData?.preferences?.contactMethod === "both" &&
-                      "Email & SMS"}
-                  </div>
+                  </CollapsibleContent>
                 </div>
-              </div>
+              </Collapsible>
 
               <div>
                 <Label htmlFor="notes">Notes for Missionaries (Optional)</Label>
