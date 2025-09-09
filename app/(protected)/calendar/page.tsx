@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarService } from "@/lib/firebase/calendar";
@@ -75,7 +82,10 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
+  const [selectedCompanionshipId, setSelectedCompanionshipId] =
+    useState<string>("all");
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
+  const [miniCalendarDays, setMiniCalendarDays] = useState<any[]>([]);
   const [slots, setSlots] = useState<VirtualDinnerSlot[]>([]);
   const [companionships, setCompanionships] = useState<
     Map<string, Companionship>
@@ -147,16 +157,25 @@ export default function CalendarPage() {
 
   const generateCalendarGrid = useCallback(() => {
     console.log("🗓️ Generating calendar grid...");
-    console.log("📅 Total virtual slots available:", slots.length);
 
-    if (slots.length > 0) {
+    // Filter slots by selected companionship
+    const filteredSlots =
+      selectedCompanionshipId === "all"
+        ? slots
+        : slots.filter(
+            (slot) => slot.companionshipId === selectedCompanionshipId,
+          );
+
+    console.log("📅 Total virtual slots available:", slots.length);
+    console.log("🔍 Filtered slots for companionship:", filteredSlots.length);
+
+    if (filteredSlots.length > 0) {
       console.log(
         "📅 Sample slot dates:",
-        slots.slice(0, 3).map((slot) => ({
+        filteredSlots.slice(0, 3).map((slot) => ({
           companionshipId: slot.companionshipId,
           date: slot.date.toDateString(),
           status: slot.status,
-          hasSignup: !!slot.signup,
         })),
       );
     }
@@ -184,7 +203,7 @@ export default function CalendarPage() {
     while (currentDay <= endDate) {
       const dateStr = currentDay.toDateString();
 
-      const daySlots = slots.filter((slot) => {
+      const daySlots = filteredSlots.filter((slot) => {
         const slotDateStr = slot.date.toDateString();
         const matches = slotDateStr === dateStr;
 
@@ -227,7 +246,7 @@ export default function CalendarPage() {
     }
 
     setCalendarDays(days);
-  }, [currentDate, slots]);
+  }, [currentDate, slots, selectedCompanionshipId]);
 
   // Load calendar data when month changes
   useEffect(() => {
@@ -260,9 +279,22 @@ export default function CalendarPage() {
     const miniDays = [];
     const current = new Date(startDate);
 
+    // Filter slots for mini calendar
+    const filteredSlots =
+      selectedCompanionshipId === "all"
+        ? slots
+        : slots.filter(
+            (slot) => slot.companionshipId === selectedCompanionshipId,
+          );
+
     while (current <= lastDay || miniDays.length < 42) {
-      const daySlots = slots.filter(
+      const daySlots = filteredSlots.filter(
         (slot) => slot.date.toDateString() === current.toDateString(),
+      );
+
+      // Only show green dots for available slots
+      const availableSlots = daySlots.filter(
+        (slot) => slot.status === "available",
       );
 
       const isInSelectedWeek =
@@ -273,7 +305,7 @@ export default function CalendarPage() {
       miniDays.push({
         date: new Date(current),
         isCurrentMonth: current.getMonth() === month,
-        hasSlots: daySlots.length > 0,
+        hasSlots: availableSlots.length > 0,
         isSelected: current.toDateString() === selectedDate.toDateString(),
         isInSelectedWeek,
         isToday: current.toDateString() === new Date().toDateString(),
@@ -284,7 +316,12 @@ export default function CalendarPage() {
     }
 
     return miniDays;
-  }, [currentDate, selectedDate, slots, viewMode]);
+  }, [currentDate, selectedDate, slots, viewMode, selectedCompanionshipId]);
+
+  // Update mini calendar when dependencies change
+  useEffect(() => {
+    setMiniCalendarDays(generateMiniCalendar());
+  }, [generateMiniCalendar]);
 
   // Get filtered days based on view mode
   const getFilteredDays = useCallback(() => {
@@ -316,7 +353,13 @@ export default function CalendarPage() {
     localStorage.setItem("calendar-view-mode", mode);
   };
 
-  // Load saved view preference
+  const handleCompanionshipFilterChange = (companionshipId: string) => {
+    setSelectedCompanionshipId(companionshipId);
+    // Remember user preference
+    localStorage.setItem("calendar-companionship-filter", companionshipId);
+  };
+
+  // Load saved preferences
   useEffect(() => {
     const savedMode = localStorage.getItem("calendar-view-mode") as
       | "month"
@@ -324,6 +367,11 @@ export default function CalendarPage() {
       | "day";
     if (savedMode) {
       setViewMode(savedMode);
+    }
+
+    const savedFilter = localStorage.getItem("calendar-companionship-filter");
+    if (savedFilter) {
+      setSelectedCompanionshipId(savedFilter);
     }
   }, []);
 
@@ -633,7 +681,7 @@ export default function CalendarPage() {
                     {day.short}
                   </div>
                 ))}
-                {generateMiniCalendar().map((day, index) => (
+                {miniCalendarDays.map((day, index) => (
                   <button
                     key={index}
                     onClick={() => handleDateSelect(day.date)}
@@ -663,8 +711,8 @@ export default function CalendarPage() {
 
             {/* View Mode Controls */}
             <div className="flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-1">
                   <h2 className="text-xl font-bold text-gray-900 mb-1">
                     {viewMode === "day"
                       ? selectedDate.toLocaleDateString("en-US", {
@@ -689,6 +737,31 @@ export default function CalendarPage() {
                         ? "Viewing dinner slots for this week"
                         : "Viewing all dinner slots for this month"}
                   </p>
+                </div>
+
+                {/* Companionship Filter */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Filter by Companionship
+                  </label>
+                  <Select
+                    value={selectedCompanionshipId}
+                    onValueChange={handleCompanionshipFilterChange}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Companionships</SelectItem>
+                      {Array.from(companionships.entries()).map(
+                        ([id, companionship]) => (
+                          <SelectItem key={id} value={id}>
+                            {companionship.area}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* View mode buttons */}
