@@ -19,7 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OnboardingFormData } from "@/types";
-import { AlertTriangle, CheckCircle, Mail, Phone, User } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Loader2,
+  Mail,
+  Phone,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 
 interface OnboardingFormProps {
@@ -407,7 +414,7 @@ export default function OnboardingForm({
               >
                 {submitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Setting up...
                   </>
                 ) : (

@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Bug,
   Database,
+  Loader2,
   Trash2,
   UserCog,
   Users,
@@ -249,7 +250,7 @@ export default function AdminPage() {
               >
                 {makingAdmin ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Setting Up Admin Access...
                   </>
                 ) : (
@@ -313,7 +314,7 @@ export default function AdminPage() {
               >
                 {seeding ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Seeding Database...
                   </>
                 ) : (
@@ -410,7 +411,7 @@ export default function AdminPage() {
               >
                 {clearing ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                     Clearing...
                   </>
                 ) : (

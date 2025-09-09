@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/lib/firebase/auth";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 
@@ -81,7 +82,7 @@ function ProtectedRouteFallback() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
         <p className="text-slate-600">Loading...</p>
       </div>
     </div>
