@@ -251,6 +251,12 @@ export default function CalendarPage() {
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
+    // Calculate week range for highlighting
+    const selectedWeekStart = new Date(selectedDate);
+    selectedWeekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
+    const selectedWeekEnd = new Date(selectedWeekStart);
+    selectedWeekEnd.setDate(selectedWeekStart.getDate() + 6);
+
     const miniDays = [];
     const current = new Date(startDate);
 
@@ -259,11 +265,17 @@ export default function CalendarPage() {
         (slot) => slot.date.toDateString() === current.toDateString(),
       );
 
+      const isInSelectedWeek =
+        viewMode === "week" &&
+        current >= selectedWeekStart &&
+        current <= selectedWeekEnd;
+
       miniDays.push({
         date: new Date(current),
         isCurrentMonth: current.getMonth() === month,
         hasSlots: daySlots.length > 0,
         isSelected: current.toDateString() === selectedDate.toDateString(),
+        isInSelectedWeek,
         isToday: current.toDateString() === new Date().toDateString(),
       });
 
@@ -272,7 +284,7 @@ export default function CalendarPage() {
     }
 
     return miniDays;
-  }, [currentDate, selectedDate, slots]);
+  }, [currentDate, selectedDate, slots, viewMode]);
 
   // Get filtered days based on view mode
   const getFilteredDays = useCallback(() => {
@@ -296,7 +308,6 @@ export default function CalendarPage() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    setViewMode("day");
   };
 
   const handleViewChange = (mode: "month" | "week" | "day") => {
@@ -633,9 +644,11 @@ export default function CalendarPage() {
                           ? "text-gray-300"
                           : day.isSelected
                             ? "bg-blue-500 text-white"
-                            : day.isToday
-                              ? "bg-blue-100 text-blue-600 font-medium"
-                              : "text-gray-700 hover:bg-gray-100"
+                            : day.isInSelectedWeek
+                              ? "bg-blue-200 text-blue-800 font-medium"
+                              : day.isToday
+                                ? "bg-blue-100 text-blue-600 font-medium"
+                                : "text-gray-700 hover:bg-gray-100"
                       }
                     `}
                   >
