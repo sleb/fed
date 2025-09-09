@@ -56,8 +56,8 @@ const generateCompanionshipName = (
   missionaries: Missionary[],
   companionship: Companionship,
 ): string => {
-  const companionshipMissionaries = missionaries.filter(
-    (m) => companionship.missionaryIds.includes(m.id) && m.isActive,
+  const companionshipMissionaries = missionaries.filter((m) =>
+    companionship.missionaryIds.includes(m.id),
   );
 
   if (companionshipMissionaries.length === 0) {
@@ -83,9 +83,7 @@ export default function CompanionshipsPage() {
   const [missionaries, setMissionaries] = useState<Missionary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "inactive" | "incomplete"
-  >("active");
+  const [filterStatus, setFilterStatus] = useState<"all" | "incomplete">("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCompanionship, setEditingCompanionship] =
     useState<Companionship | null>(null);
@@ -95,6 +93,7 @@ export default function CompanionshipsPage() {
   const [editingMissionary, setEditingMissionary] = useState<Missionary | null>(
     null,
   );
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [savingMissionary, setSavingMissionary] = useState(false);
   const [missionarySearchTerm, setMissionarySearchTerm] = useState("");
 
@@ -128,16 +127,12 @@ export default function CompanionshipsPage() {
     let filtered = companionships;
 
     // Filter by status
-    if (filterStatus === "active") {
-      filtered = filtered.filter((c) => c.isActive);
-    } else if (filterStatus === "inactive") {
-      filtered = filtered.filter((c) => !c.isActive);
-    } else if (filterStatus === "incomplete") {
+    if (filterStatus === "incomplete") {
       filtered = filtered.filter((c) => {
-        const activeMissionaries = c.missionaryIds.filter((id) =>
-          missionaries.find((m) => m.id === id && m.isActive),
+        const assignedMissionaries = c.missionaryIds.filter((id) =>
+          missionaries.find((m) => m.id === id),
         );
-        return activeMissionaries.length < 2;
+        return assignedMissionaries.length < 2;
       });
     }
 
@@ -176,8 +171,8 @@ export default function CompanionshipsPage() {
   };
 
   const getCompanionshipMissionaries = (companionship: Companionship) => {
-    return missionaries.filter(
-      (m) => companionship.missionaryIds.includes(m.id) && m.isActive,
+    return missionaries.filter((m) =>
+      companionship.missionaryIds.includes(m.id),
     );
   };
 
@@ -185,8 +180,6 @@ export default function CompanionshipsPage() {
     const activeMissionaries = getCompanionshipMissionaries(companionship);
     const count = activeMissionaries.length;
 
-    if (!companionship.isActive)
-      return { status: "inactive", count, color: "secondary", showBadge: true };
     if (count === 0)
       return { status: "empty", count, color: "outline", showBadge: true };
     if (count === 1)
@@ -196,12 +189,12 @@ export default function CompanionshipsPage() {
         color: "destructive",
         showBadge: true,
       };
-    if (count >= 2 && count <= 3)
+    if (count === 2)
       return { status: "complete", count, color: "default", showBadge: false };
     return {
-      status: "overstaffed",
+      status: "overfull",
       count,
-      color: "secondary",
+      color: "destructive",
       showBadge: true,
     };
   };
@@ -256,7 +249,6 @@ export default function CompanionshipsPage() {
     try {
       const companionshipData = {
         ...formData,
-        isActive: true,
       };
 
       if (editingCompanionship) {
@@ -281,15 +273,14 @@ export default function CompanionshipsPage() {
     }
   };
 
-  const toggleCompanionshipStatus = async (companionship: Companionship) => {
+  const deleteCompanionship = async (companionshipId: string) => {
     try {
-      await CompanionshipService.updateCompanionship(companionship.id, {
-        isActive: !companionship.isActive,
-      });
+      await CompanionshipService.deleteCompanionship(companionshipId);
       await loadData();
+      setDeleteConfirmId(null);
     } catch (err) {
-      console.error("Error updating companionship status:", err);
-      setError("Failed to update companionship status");
+      console.error("Error deleting companionship:", err);
+      setError("Failed to delete companionship");
     }
   };
 
@@ -318,7 +309,6 @@ export default function CompanionshipsPage() {
           p.trim(),
         ),
         allergies: missionaryFormData.allergies.filter((a) => a.trim()),
-        isActive: true,
       };
 
       if (editingMissionary) {
@@ -371,12 +361,8 @@ export default function CompanionshipsPage() {
   };
 
   const getUnassignedMissionaries = () => {
-    const assignedIds = new Set(
-      companionships.filter((c) => c.isActive).flatMap((c) => c.missionaryIds),
-    );
-    let filtered = missionaries.filter(
-      (m) => m.isActive && !assignedIds.has(m.id),
-    );
+    const assignedIds = new Set(companionships.flatMap((c) => c.missionaryIds));
+    let filtered = missionaries.filter((m) => !assignedIds.has(m.id));
 
     // Filter by search term
     if (missionarySearchTerm) {
@@ -523,18 +509,18 @@ export default function CompanionshipsPage() {
               </div>
               <Select
                 value={filterStatus}
-                onValueChange={(
-                  value: "all" | "active" | "inactive" | "incomplete",
-                ) => setFilterStatus(value)}
+                onValueChange={(value: "all" | "incomplete") =>
+                  setFilterStatus(value)
+                }
               >
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="incomplete">Incomplete</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="all">All Companionships</SelectItem>
+                  <SelectItem value="incomplete">
+                    Incomplete (Needs Missionaries)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -573,7 +559,7 @@ export default function CompanionshipsPage() {
                   ? "Try adjusting your search or filters"
                   : "Get started by adding your first companionship"}
               </p>
-              {!searchTerm && filterStatus === "active" && (
+              {!searchTerm && filterStatus === "all" && (
                 <Button onClick={openAddModal}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Companionship
@@ -716,22 +702,13 @@ export default function CompanionshipsPage() {
                         Edit
                       </Button>
                       <Button
-                        variant={companionship.isActive ? "outline" : "default"}
+                        variant="destructive"
                         size="sm"
-                        onClick={() => toggleCompanionshipStatus(companionship)}
+                        onClick={() => setDeleteConfirmId(companionship.id)}
                         className="flex-1"
                       >
-                        {companionship.isActive ? (
-                          <>
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Restore
-                          </>
-                        )}
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   </CardContent>
@@ -1318,6 +1295,35 @@ export default function CompanionshipsPage() {
         <Plus className="h-6 w-6" />
         <span className="sr-only">Add Companionship</span>
       </Button>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={() => setDeleteConfirmId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Companionship</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this companionship? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteConfirmId && deleteCompanionship(deleteConfirmId)
+              }
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

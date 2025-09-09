@@ -41,11 +41,11 @@ const debugDatabaseState = async () => {
     console.log("🔍 Debug: Checking database state...");
 
     // Check companionships
-    const companionships = await CompanionshipService.getActiveCompanionships();
+    const companionships = await CompanionshipService.getAllCompanionships();
     console.log("🤝 Active companionships:", companionships.length);
 
     // Check missionaries
-    const missionaries = await MissionaryService.getActiveMissionaries();
+    const missionaries = await MissionaryService.getAllMissionaries();
     console.log("👥 Active missionaries:", missionaries.length);
 
     // Check signups
@@ -242,11 +242,10 @@ export default function CalendarPage() {
   const getCompanionshipName = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
       .map((id) => missionaries.get(id))
-      .filter(Boolean)
-      .filter((m) => m!.isActive);
+      .filter(Boolean);
 
     if (companionshipMissionaries.length === 0) {
-      return "No Active Missionaries";
+      return "No Missionaries";
     }
     if (companionshipMissionaries.length === 1) {
       return companionshipMissionaries[0]!.name;
@@ -260,8 +259,7 @@ export default function CalendarPage() {
   const getAggregatedAllergies = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
       .map((id) => missionaries.get(id))
-      .filter(Boolean)
-      .filter((m) => m!.isActive);
+      .filter(Boolean);
 
     const allergiesSet = new Set<string>();
     companionshipMissionaries.forEach((missionary) => {
@@ -276,8 +274,7 @@ export default function CalendarPage() {
   const getAggregatedPreferences = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
       .map((id) => missionaries.get(id))
-      .filter(Boolean)
-      .filter((m) => m!.isActive);
+      .filter(Boolean);
 
     const preferencesSet = new Set<string>();
     companionshipMissionaries.forEach((missionary) => {
@@ -294,8 +291,7 @@ export default function CalendarPage() {
   const getAggregatedNotes = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
       .map((id) => missionaries.get(id))
-      .filter(Boolean)
-      .filter((m) => m!.isActive);
+      .filter(Boolean);
 
     return companionshipMissionaries
       .map((missionary) => missionary?.notes)

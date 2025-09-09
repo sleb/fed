@@ -115,13 +115,6 @@ export class MissionaryService {
     ]);
   }
 
-  static async getActiveMissionaries(): Promise<Missionary[]> {
-    return FirestoreService.getDocuments<Missionary>(this.collectionName, [
-      where("isActive", "==", true),
-      orderBy("name"),
-    ]);
-  }
-
   static async getMissionary(id: string): Promise<Missionary | null> {
     return FirestoreService.getDocument<Missionary>(this.collectionName, id);
   }
@@ -170,13 +163,6 @@ export class CompanionshipService {
     ]);
   }
 
-  static async getActiveCompanionships(): Promise<Companionship[]> {
-    return FirestoreService.getDocuments<Companionship>(this.collectionName, [
-      where("isActive", "==", true),
-      orderBy("area"),
-    ]);
-  }
-
   static async getCompanionship(id: string): Promise<Companionship | null> {
     return FirestoreService.getDocument<Companionship>(this.collectionName, id);
   }
@@ -186,7 +172,7 @@ export class CompanionshipService {
   ): Promise<Companionship | null> {
     const companionships = await FirestoreService.getDocuments<Companionship>(
       this.collectionName,
-      [where("area", "==", area), where("isActive", "==", true), limit(1)],
+      [where("area", "==", area), limit(1)],
     );
     return companionships.length > 0 ? companionships[0] : null;
   }

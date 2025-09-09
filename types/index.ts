@@ -5,7 +5,6 @@ export interface Missionary {
   dinnerPreferences?: string[];
   allergies?: string[];
   notes?: string;
-  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +18,6 @@ export interface Companionship {
   missionaryIds: string[];
   daysOfWeek: number[]; // 0=Sunday, 1=Monday, etc. Default: [1,2,3,4,5,6,0] (Mon-Sun)
   notes?: string;
-  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

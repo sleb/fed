@@ -85,7 +85,7 @@ export class CalendarService {
     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
     // Get all active companionships
-    const companionships = await CompanionshipService.getActiveCompanionships();
+    const companionships = await CompanionshipService.getAllCompanionships();
 
     // Generate virtual slots for all companionships
     const allVirtualSlots: VirtualDinnerSlot[] = [];
@@ -217,7 +217,7 @@ export class CalendarService {
     );
 
     // Get all missionaries
-    const allMissionaries = await MissionaryService.getActiveMissionaries();
+    const allMissionaries = await MissionaryService.getAllMissionaries();
 
     // Build maps for quick lookup
     companionshipData.forEach((companionship) => {

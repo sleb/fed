@@ -37,7 +37,6 @@ import { Companionship, Missionary } from "@/types";
 import {
   AlertTriangle,
   ArrowLeft,
-  Edit,
   Loader2,
   Mail,
   Plus,
@@ -60,13 +59,14 @@ export default function MissionariesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "inactive" | "assigned" | "unassigned"
-  >("active");
+    "all" | "assigned" | "unassigned"
+  >("all");
   const [showMissionaryModal, setShowMissionaryModal] = useState(false);
   const [editingMissionary, setEditingMissionary] = useState<Missionary | null>(
     null,
   );
   const [savingMissionary, setSavingMissionary] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Form state for missionary
@@ -88,24 +88,16 @@ export default function MissionariesPage() {
     let filtered = missionaries;
 
     // Filter by status
-    if (filterStatus === "active") {
-      filtered = filtered.filter((m) => m.isActive);
-    } else if (filterStatus === "inactive") {
-      filtered = filtered.filter((m) => !m.isActive);
-    } else if (filterStatus === "assigned") {
+    if (filterStatus === "assigned") {
       const assignedIds = new Set(
-        companionships
-          .filter((c) => c.isActive)
-          .flatMap((c) => c.missionaryIds),
+        companionships.flatMap((c) => c.missionaryIds),
       );
-      filtered = filtered.filter((m) => m.isActive && assignedIds.has(m.id));
+      filtered = filtered.filter((m) => assignedIds.has(m.id));
     } else if (filterStatus === "unassigned") {
       const assignedIds = new Set(
-        companionships
-          .filter((c) => c.isActive)
-          .flatMap((c) => c.missionaryIds),
+        companionships.flatMap((c) => c.missionaryIds),
       );
-      filtered = filtered.filter((m) => m.isActive && !assignedIds.has(m.id));
+      filtered = filtered.filter((m) => !assignedIds.has(m.id));
     }
 
     // Filter by search term
@@ -143,9 +135,7 @@ export default function MissionariesPage() {
   };
 
   const getMissionaryCompanionship = (missionary: Missionary) => {
-    return companionships.find(
-      (c) => c.isActive && c.missionaryIds.includes(missionary.id),
-    );
+    return companionships.find((c) => c.missionaryIds.includes(missionary.id));
   };
 
   const resetMissionaryForm = () => {
@@ -196,7 +186,6 @@ export default function MissionariesPage() {
           p.trim(),
         ),
         allergies: missionaryFormData.allergies.filter((a) => a.trim()),
-        isActive: true,
       };
 
       if (editingMissionary) {
@@ -223,15 +212,14 @@ export default function MissionariesPage() {
     }
   };
 
-  const toggleMissionaryStatus = async (missionary: Missionary) => {
+  const deleteMissionary = async (missionaryId: string) => {
     try {
-      await MissionaryService.updateMissionary(missionary.id, {
-        isActive: !missionary.isActive,
-      });
+      await MissionaryService.deleteMissionary(missionaryId);
       await loadData();
+      setDeleteConfirmId(null);
     } catch (err) {
-      console.error("Error updating missionary status:", err);
-      setError("Failed to update missionary status");
+      console.error("Error deleting missionary:", err);
+      setError("Failed to delete missionary");
     }
   };
 
@@ -343,22 +331,15 @@ export default function MissionariesPage() {
             {/* Status Filter */}
             <Select
               value={filterStatus}
-              onValueChange={(
-                value:
-                  | "all"
-                  | "active"
-                  | "inactive"
-                  | "assigned"
-                  | "unassigned",
-              ) => setFilterStatus(value)}
+              onValueChange={(value: "all" | "assigned" | "unassigned") =>
+                setFilterStatus(value)
+              }
             >
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Missionaries</SelectItem>
-                <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="inactive">Inactive Only</SelectItem>
                 <SelectItem value="assigned">
                   Assigned to Companionships
                 </SelectItem>
@@ -378,7 +359,7 @@ export default function MissionariesPage() {
 
         {/* Stats - Compact Mobile Layout */}
         <div className="bg-white rounded-lg border p-3 sm:p-4 mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center">
               <div className="text-lg sm:text-2xl font-bold">
                 {missionaries.length}
@@ -388,24 +369,13 @@ export default function MissionariesPage() {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-lg sm:text-2xl font-bold text-green-600">
-                {missionaries.filter((m) => m.isActive).length}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Active
-              </div>
-            </div>
-            <div className="text-center">
               <div className="text-lg sm:text-2xl font-bold text-blue-600">
                 {(() => {
                   const assignedIds = new Set(
-                    companionships
-                      .filter((c) => c.isActive)
-                      .flatMap((c) => c.missionaryIds),
+                    companionships.flatMap((c) => c.missionaryIds),
                   );
-                  return missionaries.filter(
-                    (m) => m.isActive && assignedIds.has(m.id),
-                  ).length;
+                  return missionaries.filter((m) => assignedIds.has(m.id))
+                    .length;
                 })()}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
@@ -416,13 +386,10 @@ export default function MissionariesPage() {
               <div className="text-lg sm:text-2xl font-bold text-orange-600">
                 {(() => {
                   const assignedIds = new Set(
-                    companionships
-                      .filter((c) => c.isActive)
-                      .flatMap((c) => c.missionaryIds),
+                    companionships.flatMap((c) => c.missionaryIds),
                   );
-                  return missionaries.filter(
-                    (m) => m.isActive && !assignedIds.has(m.id),
-                  ).length;
+                  return missionaries.filter((m) => !assignedIds.has(m.id))
+                    .length;
                 })()}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
@@ -458,9 +425,7 @@ export default function MissionariesPage() {
               return (
                 <Card
                   key={missionary.id}
-                  className={`hover:shadow-md transition-shadow ${
-                    !missionary.isActive ? "opacity-60" : ""
-                  }`}
+                  className="hover:shadow-md transition-shadow"
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -482,10 +447,7 @@ export default function MissionariesPage() {
                         )}
                       </div>
                       <div className="flex flex-col gap-2">
-                        {!missionary.isActive && (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
-                        {missionary.isActive && !companionship && (
+                        {!companionship && (
                           <Badge variant="outline">Unassigned</Badge>
                         )}
                       </div>
@@ -547,23 +509,23 @@ export default function MissionariesPage() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-2 pt-3">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openEditModal(missionary)}
                         className="flex-1"
                       >
-                        <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
                       <Button
-                        variant={missionary.isActive ? "secondary" : "default"}
+                        variant="destructive"
                         size="sm"
-                        onClick={() => toggleMissionaryStatus(missionary)}
+                        onClick={() => setDeleteConfirmId(missionary.id)}
                         className="flex-1"
                       >
-                        {missionary.isActive ? "Deactivate" : "Activate"}
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   </CardContent>
@@ -817,6 +779,35 @@ export default function MissionariesPage() {
         <UserPlus className="h-6 w-6" />
         <span className="sr-only">Add Missionary</span>
       </Button>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={() => setDeleteConfirmId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Missionary</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this missionary? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteConfirmId && deleteMissionary(deleteConfirmId)
+              }
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

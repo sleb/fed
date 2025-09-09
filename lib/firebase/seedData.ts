@@ -13,7 +13,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Italian", "Vegetarian"],
     allergies: ["Nuts"],
     notes: "Vegetarian, prefers simple meals",
-    isActive: true,
   },
   {
     name: "Elder Johnson",
@@ -21,15 +20,13 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Mexican", "Home cooking"],
     allergies: ["Shellfish"],
     notes: "Loves spicy food",
-    isActive: true,
   },
   {
     name: "Elder Davis",
     email: "elder.davis@missionary.org",
     dinnerPreferences: ["American", "Asian"],
     allergies: [],
-    notes: "Easy going with food",
-    isActive: true,
+    notes: "Always grateful for any meal",
   },
   {
     name: "Elder Wilson",
@@ -37,7 +34,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Healthy options", "Grilled food"],
     allergies: [],
     notes: "Enjoys trying new cuisines",
-    isActive: true,
   },
   {
     name: "Elder Thompson",
@@ -45,7 +41,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["BBQ", "Comfort food"],
     allergies: [],
     notes: "Big appetite, loves BBQ",
-    isActive: true,
   },
   {
     name: "Elder Garcia",
@@ -53,7 +48,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Mexican", "Traditional"],
     allergies: ["Dairy"],
     notes: "Lactose intolerant, speaks Spanish fluently",
-    isActive: true,
   },
   {
     name: "Elder Brown",
@@ -61,7 +55,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Pizza", "Sandwiches"],
     allergies: [],
     notes: "Simple food preferences",
-    isActive: true,
   },
   {
     name: "Elder Taylor",
@@ -69,7 +62,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Gluten-free", "Salads"],
     allergies: ["Gluten"],
     notes: "Has celiac disease - strict gluten-free diet required",
-    isActive: true,
   },
   {
     name: "Elder Anderson",
@@ -77,7 +69,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Tex-Mex", "Burgers"],
     allergies: [],
     notes: "Very active, big appetite",
-    isActive: true,
   },
   {
     name: "Elder Martinez",
@@ -85,7 +76,6 @@ const SAMPLE_MISSIONARIES: Omit<
     dinnerPreferences: ["Grilled food", "Traditional"],
     allergies: [],
     notes: "Loves outdoor activities and hearty meals",
-    isActive: true,
   },
 ];
 
@@ -184,7 +174,6 @@ export const seedDatabase = async (): Promise<void> => {
         notes: companionshipTemplate.notes,
         missionaryIds,
         daysOfWeek: companionshipTemplate.daysOfWeek,
-        isActive: true,
       };
 
       const docRef = await addDoc(collection(db, "companionships"), {
