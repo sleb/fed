@@ -292,10 +292,20 @@ export default function CalendarPage() {
         (slot) => slot.date.toDateString() === current.toDateString(),
       );
 
-      // Only show green dots for available slots
+      // Check slot status for this day
       const availableSlots = daySlots.filter(
         (slot) => slot.status === "available",
       );
+
+      // Check if user has signed up for this day (any companionship)
+      const userSignupSlots = slots.filter(
+        (slot) =>
+          slot.date.toDateString() === current.toDateString() &&
+          isUserSignedUpForSlot(slot),
+      );
+
+      // Check if there are taken slots (someone else signed up)
+      const takenSlots = daySlots.filter((slot) => slot.status === "taken");
 
       const isInSelectedWeek =
         viewMode === "week" &&
@@ -305,7 +315,9 @@ export default function CalendarPage() {
       miniDays.push({
         date: new Date(current),
         isCurrentMonth: current.getMonth() === month,
-        hasSlots: availableSlots.length > 0,
+        hasAvailableSlots: availableSlots.length > 0,
+        hasUserSignup: userSignupSlots.length > 0,
+        hasTakenSlots: takenSlots.length > 0,
         isSelected: current.toDateString() === selectedDate.toDateString(),
         isInSelectedWeek,
         isToday: current.toDateString() === new Date().toDateString(),
@@ -691,19 +703,32 @@ export default function CalendarPage() {
                         !day.isCurrentMonth
                           ? "text-gray-300"
                           : day.isSelected
-                            ? "bg-blue-500 text-white"
+                            ? "bg-purple-500 text-white"
                             : day.isInSelectedWeek
-                              ? "bg-blue-200 text-blue-800 font-medium"
-                              : day.isToday
-                                ? "bg-blue-100 text-blue-600 font-medium"
-                                : "text-gray-700 hover:bg-gray-100"
+                              ? "bg-purple-200 text-purple-800 font-medium"
+                              : day.hasUserSignup
+                                ? "bg-blue-100 text-blue-700 font-medium"
+                                : day.isToday
+                                  ? "bg-gray-100 text-gray-700 font-medium"
+                                  : "text-gray-700 hover:bg-gray-100"
                       }
                     `}
                   >
                     {day.date.getDate()}
-                    {day.hasSlots && day.isCurrentMonth && (
-                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full"></div>
-                    )}
+                    {day.isCurrentMonth &&
+                      (day.hasAvailableSlots ||
+                        day.hasUserSignup ||
+                        day.hasTakenSlots) && (
+                        <div
+                          className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                            day.hasUserSignup
+                              ? "bg-blue-400"
+                              : day.hasAvailableSlots
+                                ? "bg-green-400"
+                                : "bg-gray-400"
+                          }`}
+                        ></div>
+                      )}
                   </button>
                 ))}
               </div>
