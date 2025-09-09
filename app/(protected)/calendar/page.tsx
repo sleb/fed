@@ -75,6 +75,17 @@ interface CalendarDay {
   slots: VirtualDinnerSlot[];
 }
 
+interface MiniCalendarDay {
+  date: Date;
+  isCurrentMonth: boolean;
+  hasAvailableSlots: boolean;
+  hasUserSignup: boolean;
+  hasTakenSlots: boolean;
+  isSelected: boolean;
+  isInSelectedWeek: boolean;
+  isToday: boolean;
+}
+
 export default function CalendarPage() {
   const { user, userData } = useAuth();
 
@@ -85,7 +96,9 @@ export default function CalendarPage() {
   const [selectedCompanionshipId, setSelectedCompanionshipId] =
     useState<string>("all");
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
-  const [miniCalendarDays, setMiniCalendarDays] = useState<any[]>([]);
+  const [miniCalendarDays, setMiniCalendarDays] = useState<MiniCalendarDay[]>(
+    [],
+  );
   const [slots, setSlots] = useState<VirtualDinnerSlot[]>([]);
   const [companionships, setCompanionships] = useState<
     Map<string, Companionship>
@@ -260,6 +273,14 @@ export default function CalendarPage() {
     generateCalendarGrid();
   }, [generateCalendarGrid]);
 
+  // Check if user is signed up for a slot
+  const isUserSignedUpForSlot = useCallback(
+    (slot: VirtualDinnerSlot) => {
+      return slot.signup && slot.signup.userId === user?.uid;
+    },
+    [user?.uid],
+  );
+
   // Generate mini calendar for navigation widget
   const generateMiniCalendar = useCallback(() => {
     const year = currentDate.getFullYear();
@@ -328,7 +349,14 @@ export default function CalendarPage() {
     }
 
     return miniDays;
-  }, [currentDate, selectedDate, slots, viewMode, selectedCompanionshipId]);
+  }, [
+    currentDate,
+    selectedDate,
+    slots,
+    viewMode,
+    selectedCompanionshipId,
+    isUserSignedUpForSlot,
+  ]);
 
   // Update mini calendar when dependencies change
   useEffect(() => {
@@ -445,10 +473,6 @@ export default function CalendarPage() {
       .map((missionary) => missionary?.notes)
       .filter(Boolean)
       .join("; ");
-  };
-
-  const isUserSignedUpForSlot = (slot: VirtualDinnerSlot) => {
-    return slot.signup && slot.signup.userId === user?.uid;
   };
 
   const getUserSignupForSlot = (slot: VirtualDinnerSlot) => {
