@@ -16,6 +16,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Use headless mode for better compatibility
+    headless: true,
   },
 
   projects: [
@@ -23,9 +25,20 @@ export default defineConfig({
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        // Use the system chromium browser
+        // Try to use system chromium with different flags
         channel: undefined,
-        executablePath: '/usr/bin/chromium-browser'
+        launchOptions: {
+          executablePath: '/usr/bin/chromium-browser',
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox', 
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
+          ]
+        }
       },
     },
   ],
