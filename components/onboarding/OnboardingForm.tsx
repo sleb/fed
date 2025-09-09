@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -148,19 +149,20 @@ export default function OnboardingForm({
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* User Info Summary */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-medium text-blue-800 mb-2">
-                Your Information
-              </h3>
-              <div className="space-y-1 text-sm text-blue-700">
-                <p>
-                  <strong>Name:</strong> {userName}
-                </p>
-                <p>
-                  <strong>Email:</strong> {userEmail}
-                </p>
-              </div>
-            </div>
+            <Alert variant="info">
+              <User className="h-4 w-4" />
+              <AlertTitle>Your Information</AlertTitle>
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p>
+                    <strong>Name:</strong> {userName}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {userEmail}
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
 
             {/* Contact Information */}
             <div className="space-y-4">
@@ -383,22 +385,16 @@ export default function OnboardingForm({
             {(formData.contactMethod === "sms" ||
               formData.contactMethod === "both") &&
               !formData.phone && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-yellow-800">
-                        Phone Number Required
-                      </h4>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        You&apos;ve chosen to receive SMS notifications, but
-                        haven&apos;t provided a phone number. Please add your
-                        phone number or select &quot;Email Only&quot; for
-                        notifications.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Phone Number Required</AlertTitle>
+                  <AlertDescription>
+                    You&apos;ve chosen to receive SMS notifications, but
+                    haven&apos;t provided a phone number. Please add your phone
+                    number above or change your contact preference to
+                    &quot;Email Only&quot;.
+                  </AlertDescription>
+                </Alert>
               )}
 
             {/* Submit Button */}

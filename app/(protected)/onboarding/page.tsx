@@ -1,9 +1,12 @@
 "use client";
 
 import OnboardingForm from "@/components/onboarding/OnboardingForm";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { updateUserProfile } from "@/lib/firebase/auth";
 import { OnboardingFormData } from "@/types";
+import { AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -94,15 +97,13 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p className="text-red-800">{error}</p>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-blue-600 hover:text-blue-800"
-          >
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button onClick={() => setError(null)} variant="outline">
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     );

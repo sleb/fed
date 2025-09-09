@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -230,21 +231,15 @@ export default function AdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <UserCog className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-blue-800">
-                      Development Setup Required
-                    </h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      To test the admin features, you need admin permissions.
-                      Click the button below to grant yourself admin access in
-                      the development environment.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <Alert variant="info">
+                <UserCog className="h-4 w-4" />
+                <AlertTitle>Development Setup Required</AlertTitle>
+                <AlertDescription>
+                  To test the admin features, you need admin permissions. Click
+                  the button below to grant yourself admin access in development
+                  mode.
+                </AlertDescription>
+              </Alert>
 
               <Button
                 onClick={handleMakeAdmin}
@@ -282,45 +277,30 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Warning */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-yellow-800">
-                    Development Setup
-                  </h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    This will create sample missionaries and dinner slots in
-                    your Firebase database. Only use this in development or
-                    testing environments.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <Alert variant="warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Development Setup</AlertTitle>
+              <AlertDescription>
+                This will create sample missionaries and dinner slots in your
+                development database. This is safe to run multiple times.
+              </AlertDescription>
+            </Alert>
 
             {/* Results */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-red-800">Error</h4>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
-                  </div>
-                </div>
-              </div>
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {seedResult && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Database className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-green-800">Success</h4>
-                    <p className="text-sm text-green-700 mt-1">{seedResult}</p>
-                  </div>
-                </div>
-              </div>
+              <Alert variant="success">
+                <Database className="h-4 w-4" />
+                <AlertTitle>Success</AlertTitle>
+                <AlertDescription>{seedResult}</AlertDescription>
+              </Alert>
             )}
 
             {/* Seed Button */}
@@ -362,24 +342,25 @@ export default function AdminPage() {
 
             {/* Next Steps */}
             {seedResult && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-2">Next steps:</h4>
-                <ol className="text-sm text-gray-700 space-y-1">
-                  <li>
-                    1. Go to the{" "}
-                    <Button
-                      variant="link"
-                      className="p-0 h-auto"
-                      onClick={() => router.push("/calendar")}
-                    >
-                      Calendar Page
-                    </Button>
-                  </li>
-                  <li>2. Test signing up for dinner slots</li>
-                  <li>3. Verify the signup and cancellation flows</li>
-                  <li>4. Check that slots become unavailable when assigned</li>
-                </ol>
-              </div>
+              <Alert variant="default">
+                <AlertTitle>Next steps:</AlertTitle>
+                <AlertDescription>
+                  <ol className="space-y-1">
+                    <li>
+                      1. Go to the{" "}
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto"
+                        onClick={() => router.push("/calendar")}
+                      >
+                        Calendar page
+                      </Button>
+                    </li>
+                    <li>2. Click on available dinner slots to test signup</li>
+                    <li>3. Try the missionary dietary information display</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
             )}
           </CardContent>
         </Card>
@@ -398,15 +379,11 @@ export default function AdminPage() {
           <CardContent className="space-y-4">
             {/* Debug Results */}
             {debugResult && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Bug className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-blue-800">Debug Results</h4>
-                    <p className="text-sm text-blue-700 mt-1">{debugResult}</p>
-                  </div>
-                </div>
-              </div>
+              <Alert variant="info">
+                <Bug className="h-4 w-4" />
+                <AlertTitle>Debug Results</AlertTitle>
+                <AlertDescription>{debugResult}</AlertDescription>
+              </Alert>
             )}
 
             {/* Debug Actions */}

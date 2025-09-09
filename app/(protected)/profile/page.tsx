@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -253,23 +254,19 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 {/* Success/Error Messages */}
                 {success && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <p className="text-green-800 font-medium">
-                        Profile updated successfully!
-                      </p>
-                    </div>
-                  </div>
+                  <Alert variant="success">
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Profile updated successfully!
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-red-600" />
-                      <p className="text-red-800 font-medium">{error}</p>
-                    </div>
-                  </div>
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
 
                 {/* Contact Information */}
@@ -482,22 +479,14 @@ export default function ProfilePage() {
                 {(formData.contactMethod === "sms" ||
                   formData.contactMethod === "both") &&
                   !formData.phone && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-yellow-800">
-                            Phone Number Required
-                          </h4>
-                          <p className="text-sm text-yellow-700 mt-1">
-                            You&apos;ve chosen to receive SMS notifications, but
-                            haven&apos;t provided a phone number. Please add
-                            your phone number or select &quot;Email Only&quot;
-                            for notifications.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    <Alert variant="warning">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        You&apos;ve chosen to receive SMS notifications, but
+                        haven&apos;t provided a phone number. Please add your
+                        phone number above.
+                      </AlertDescription>
+                    </Alert>
                   )}
 
                 {/* Save Button */}
