@@ -11,8 +11,11 @@ A modern Next.js application for coordinating dinners between ward members and m
 - **👤 Role-Based Access**: Member and Admin roles with appropriate permissions
 - **📅 Dynamic Calendar**: Virtual slots generated from companionship schedules
 - **🍽️ Smart Dietary Management**: Comprehensive allergy and preference tracking
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile
-- **⚡ Real-time Updates**: Instant signup reflection across all users
+- **📱 Responsive Design**: Mobile-optimized with touch-friendly interfaces
+- **⚡ Real-time Updates**: Live calendar synchronization across all users
+- **🎯 Smart Calendar Navigation**: Multi-view calendar with mini-calendar widget
+- **🔍 Advanced Filtering**: Filter by companionship with persistent preferences
+- **♿ Accessibility First**: Screen reader support and keyboard navigation
 
 ## 🎯 Core Concepts
 
@@ -47,6 +50,7 @@ No pre-created database records for empty slots:
 - **Shows availability** without database bloat
 - **Creates records** only when someone actually signs up
 - **Zero maintenance** - no admin slot generation needed
+- **Real-time sync** - instant availability updates across all users
 
 ## 🏗 Data Model
 
@@ -205,7 +209,12 @@ fed/
 
 ### For Members
 
-- **Visual Calendar**: Color-coded slots (Available, Taken, Your Signups)
+- **Multi-View Calendar**: Month, week, and day views with intuitive navigation
+- **Mini Calendar Widget**: Quick navigation with availability indicators and user signups
+- **Smart Filtering**: Filter by companionship with preferences saved across sessions
+- **Visual Calendar**: Color-coded slots (green=available, blue=your signup, gray=taken)
+- **Mobile-Optimized**: Touch-friendly interface with floating action buttons
+- **Real-Time Updates**: See slot availability changes instantly without refresh
 - **Streamlined Signup**: Modal displays saved contact info with link to edit profile
 - **Dietary Information**: Clear display of missionary allergies and preferences
 - **Profile Management**: Dedicated profile page for contact info and notification preferences
@@ -213,6 +222,10 @@ fed/
 
 ### For Administrators
 
+- **Mobile Admin Interface**: Touch-optimized management with floating controls
+- **Responsive Data Tables**: Auto-scaling tables with touch-friendly actions
+- **Confirmation Dialogs**: Safe deletion with confirmation prompts
+- **Statistics Dashboard**: Compact stats display for mobile and desktop
 - **Zero Maintenance**: No slot generation needed - dynamic slots from companionship schedules
 - **Real-time Monitoring**: Dashboard shows upcoming signups and member activity
 - **User Management**: View member profiles, contact preferences, and signup statistics
@@ -246,6 +259,90 @@ fed/
 ✅ Simplified data relationships
 ✅ Better performance and scalability
 ```
+
+## 🏗 Architecture & Design Decisions
+
+### Real-Time Data Architecture
+
+**Live Calendar Subscriptions**: The calendar uses Firebase's `onSnapshot` for real-time updates:
+
+```typescript
+// Automatic synchronization across all users
+CalendarService.subscribeToCalendarDataForMonth(year, month, (calendarData) => {
+  // Updates happen instantly across all users
+  setSlots(calendarData.slots);
+  setCompanionships(calendarData.companionships);
+  setMissionaries(calendarData.missionaries);
+});
+```
+
+**Benefits**:
+
+- ✅ Instant availability updates when users sign up
+- ✅ No manual refresh needed after mutations
+- ✅ Consistent state across all connected clients
+- ✅ Efficient bandwidth usage (only current month data)
+
+### Mobile-First Design Principles
+
+**Responsive Breakpoints**: Tailored interfaces for different screen sizes:
+
+- **Desktop**: Full calendar grid with detailed information panels
+- **Tablet**: Compressed headers with touch-optimized controls
+- **Mobile**: Floating action buttons, compact layouts, simplified navigation
+
+**Touch Interface Optimizations**:
+
+- Larger touch targets (min 44px) for all interactive elements
+- Swipe gestures for calendar navigation
+- Floating action buttons positioned for thumb accessibility
+- Bottom sheets for mobile modals and forms
+
+### Accessibility Implementation
+
+**Screen Reader Support**:
+
+- Semantic HTML with proper ARIA labels
+- Screen reader announcements for dynamic content changes
+- Keyboard navigation support for all interactive elements
+- Focus management in modals and dynamic interfaces
+
+**Visual Accessibility**:
+
+- High contrast color scheme with meaningful color coding
+- Clear visual hierarchy with proper heading structure
+- Loading states and error boundaries with descriptive messages
+
+### State Management Strategy
+
+**Local State with Real-Time Sync**:
+
+- React state for UI interactions and form data
+- Firebase subscriptions for shared application data
+- Optimistic updates with rollback on conflicts
+- Persistent user preferences in localStorage
+
+**Data Flow**:
+
+```
+Firebase Firestore → Real-time Subscriptions → React State → UI Updates
+```
+
+### Component Architecture
+
+**Separation of Concerns**:
+
+- **Services Layer**: Firebase operations and business logic
+- **Hooks Layer**: Custom hooks for auth and data management
+- **Components Layer**: Pure UI components with minimal logic
+- **Pages Layer**: Route-specific logic and data coordination
+
+**Reusable Patterns**:
+
+- Generic subscription hook for real-time data
+- Consistent modal and dialog patterns
+- Standardized form validation and submission
+- Shared loading and error state handling
 
 ## 🚀 Getting Started
 
@@ -335,40 +432,82 @@ node scripts/seedEmulator.js seed        # Seed test data
 
 ## 🎯 Development Roadmap
 
-### Phase 1: Core Functionality (Current)
+### Phase 1: Core Functionality ✅ COMPLETE
 
 - [x] Authentication and authorization with Google OAuth
 - [x] Complete user onboarding flow with validation
 - [x] User profile management with notification preferences
-- [x] Missionary and companionship management
-- [x] Dynamic calendar with virtual slots
+- [x] Missionary and companionship management with mobile UI
+- [x] Dynamic calendar with virtual slots and real-time updates
+- [x] Multi-view calendar (month, week, day) with navigation widget
+- [x] Smart filtering by companionship with persistent preferences
+- [x] Mobile-optimized responsive design with touch interfaces
+- [x] Real-time live updates across all users
+- [x] Accessibility support with screen reader compatibility
 - [x] Streamlined signup flow with saved user preferences
-- [x] Admin dashboard with data management tools
+- [x] Admin dashboard with mobile-friendly data management tools
+- [x] Comprehensive error handling and loading states
 
-### Phase 2: Enhanced Features
+### Phase 2: Enhanced Features (In Progress)
 
 - [ ] Email/SMS notification implementation (backend)
-- [ ] Automated reminder system
-- [ ] Signup modification and cancellation
-- [ ] Enhanced admin reporting and analytics
-- [ ] Bulk member management tools
+- [ ] Automated reminder system with customizable timing
+- [ ] Signup modification and cancellation workflows
+- [ ] Enhanced admin reporting and analytics dashboard
+- [ ] Bulk member management and import tools
+- [ ] Calendar export/sync with external calendar apps
+- [ ] Advanced search and filtering capabilities
+- [ ] Recurring dinner series support
 
-### Phase 3: Polish & Scale
+### Phase 3: Polish & Scale (Planned)
 
-- [ ] Complete notification delivery system
-- [ ] Advanced reporting and data export
-- [ ] Error handling and recovery mechanisms
-- [ ] Performance optimization for large datasets
-- [ ] Multi-ward/stake support
-- [ ] Production deployment guides
+- [ ] Complete notification delivery system with delivery tracking
+- [ ] Advanced reporting and data export (CSV, PDF)
+- [ ] Enhanced error handling and recovery mechanisms
+- [ ] Performance optimization for large datasets and high concurrency
+- [ ] Multi-ward/stake support with role delegation
+- [ ] Offline support with data synchronization
+- [ ] Production deployment guides and monitoring
+- [ ] Automated testing suite and CI/CD pipeline
+- [ ] User feedback and rating system
+- [ ] Integration with church management systems
 
 ## 🛠 Technology Stack
 
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS v4
-- **Backend**: Firebase (Auth + Firestore)
-- **UI Components**: Custom components with Radix UI primitives
-- **Development**: Firebase Emulator Suite
-- **Deployment**: Firebase App Hosting
+- **Backend**: Firebase (Auth + Firestore with real-time subscriptions)
+- **UI Components**: Custom components with Radix UI primitives and shadcn/ui
+- **Accessibility**: Radix UI primitives for keyboard navigation and screen readers
+- **Real-time**: Firebase Firestore onSnapshot for live data synchronization
+- **State Management**: React hooks with Firebase subscriptions
+- **Development**: Firebase Emulator Suite with automated seeding
+- **Deployment**: Firebase App Hosting with Next.js optimization
+
+## 📈 Recent Progress & Achievements
+
+### Calendar & Mobile UX Improvements
+
+- **Real-time synchronization**: Calendar now updates instantly across all users
+- **Mobile-first design**: Complete mobile optimization with touch interfaces
+- **Multi-view navigation**: Month, week, and day views with mini-calendar widget
+- **Smart filtering**: Companionship filtering with persistent user preferences
+- **Accessibility enhancements**: Full screen reader support and keyboard navigation
+
+### Technical Improvements
+
+- **Live data subscriptions**: Firebase real-time listeners for instant updates
+- **Type safety improvements**: Enhanced TypeScript definitions and validation
+- **Error handling**: Comprehensive error boundaries and user feedback
+- **Performance optimization**: Efficient data loading and subscription management
+- **Code quality**: Fixed all TypeScript diagnostics and improved maintainability
+
+### Design System Evolution
+
+- **Consistent visual language**: Color-coded status indicators across all views
+- **Responsive breakpoints**: Tailored experiences for desktop, tablet, and mobile
+- **Touch-optimized controls**: Floating action buttons and gesture support
+- **Loading states**: Skeleton screens and progressive data loading
+- **Confirmation patterns**: Safe deletion workflows with user confirmation
 
 ## 📝 Contributing
 
@@ -376,9 +515,11 @@ Since this is pre-alpha software:
 
 1. Expect breaking changes frequently
 2. No formal contribution process yet
-3. Focus on core functionality over polish
-4. Document architectural decisions
-5. Keep dependencies minimal
+3. Focus on core functionality with mobile-first approach
+4. Document architectural decisions and accessibility considerations
+5. Keep dependencies minimal and maintain real-time performance
+6. Test across multiple devices and screen sizes
+7. Validate accessibility with screen readers
 
 ## 📄 License
 
