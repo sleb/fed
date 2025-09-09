@@ -376,28 +376,27 @@ export default function MissionariesPage() {
           </Alert>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Total Missionaries
-              </CardTitle>
-              <div className="text-2xl font-bold">{missionaries.length}</div>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Active</CardTitle>
-              <div className="text-2xl font-bold text-green-600">
+        {/* Stats - Compact Mobile Layout */}
+        <div className="bg-white rounded-lg border p-3 sm:p-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="text-center">
+              <div className="text-lg sm:text-2xl font-bold">
+                {missionaries.length}
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Total
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg sm:text-2xl font-bold text-green-600">
                 {missionaries.filter((m) => m.isActive).length}
               </div>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Active
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">
                 {(() => {
                   const assignedIds = new Set(
                     companionships
@@ -409,12 +408,12 @@ export default function MissionariesPage() {
                   ).length;
                 })()}
               </div>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Unassigned</CardTitle>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Assigned
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg sm:text-2xl font-bold text-orange-600">
                 {(() => {
                   const assignedIds = new Set(
                     companionships
@@ -426,8 +425,11 @@ export default function MissionariesPage() {
                   ).length;
                 })()}
               </div>
-            </CardHeader>
-          </Card>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Unassigned
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Missionaries Grid */}
