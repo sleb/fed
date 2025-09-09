@@ -470,27 +470,30 @@ export default function CompanionshipsPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Button
                 variant="ghost"
                 onClick={() => router.push("/admin")}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-fit"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Admin
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="h-8 w-8" />
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8" />
                   Companionship Management
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-gray-600 mt-1 text-sm sm:text-base">
                   Manage companionships, assignments, and dinner coordination
                 </p>
               </div>
             </div>
-            <Button onClick={openAddModal} className="flex items-center gap-2">
+            <Button
+              onClick={openAddModal}
+              className="flex items-center gap-2 w-full sm:w-fit"
+            >
               <Plus className="h-4 w-4" />
               Add Companionship
             </Button>
