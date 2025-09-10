@@ -635,23 +635,23 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        {/* Mobile Header */}
+        <div className="md:hidden mb-6 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Dinner Calendar
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-gray-600">
             Sign up to provide dinner for our missionaries
           </p>
         </div>
 
-        {/* Navigation Widget */}
-        <div className="bg-white rounded-xl shadow-xl border p-8 mb-8">
-          <div className="flex flex-col gap-10">
-            {/* Mini Calendar - Responsive Centered Layout */}
+        {/* Mobile Navigation Widget */}
+        <div className="md:hidden bg-white rounded-xl shadow-xl border p-6 mb-8">
+          <div className="flex flex-col gap-6">
+            {/* Mini Calendar - Mobile Only */}
             <div className="flex justify-center">
-              <div className="w-full max-w-sm sm:w-80">
-                <div className="flex items-center justify-between mb-8">
+              <div className="w-full max-w-sm">
+                <div className="flex items-center justify-between mb-6">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -675,7 +675,7 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Mini calendar grid */}
-                <div className="grid grid-cols-7 gap-2 p-4 bg-gray-50 rounded-xl shadow-inner">
+                <div className="grid grid-cols-7 gap-2 p-3 bg-gray-50 rounded-lg">
                   {[
                     { short: "S", key: "sun" },
                     { short: "M", key: "mon" },
@@ -687,7 +687,7 @@ export default function CalendarPage() {
                   ].map((day) => (
                     <div
                       key={day.key}
-                      className="text-sm text-center text-gray-600 font-semibold p-2"
+                      className="text-xs text-center text-gray-600 font-medium p-1"
                     >
                       {day.short}
                     </div>
@@ -697,18 +697,18 @@ export default function CalendarPage() {
                       key={index}
                       onClick={() => handleDateSelect(day.date)}
                       className={`
-                        text-sm p-2 rounded-lg transition-all duration-200 relative font-medium hover:scale-105
+                        text-xs p-2 rounded transition-colors relative
                         ${
                           !day.isCurrentMonth
                             ? "text-gray-300"
                             : day.isSelected
-                              ? "bg-purple-600 text-white shadow-md"
+                              ? "bg-purple-500 text-white"
                               : day.isInSelectedWeek
-                                ? "bg-purple-100 text-purple-800 shadow-sm"
+                                ? "bg-purple-200 text-purple-800 font-medium"
                                 : day.hasUserSignup
-                                  ? "bg-blue-100 text-blue-700 shadow-sm"
+                                  ? "bg-blue-100 text-blue-700 font-medium"
                                   : day.isToday
-                                    ? "bg-indigo-100 text-indigo-700 shadow-sm"
+                                    ? "bg-gray-100 text-gray-700 font-medium"
                                     : "text-gray-700 hover:bg-gray-100"
                         }
                       `}
@@ -719,12 +719,12 @@ export default function CalendarPage() {
                           day.hasUserSignup ||
                           day.hasTakenSlots) && (
                           <div
-                            className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
+                            className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
                               day.hasUserSignup
-                                ? "bg-blue-500"
+                                ? "bg-blue-400"
                                 : day.hasAvailableSlots
-                                  ? "bg-green-500"
-                                  : "bg-gray-500"
+                                  ? "bg-green-400"
+                                  : "bg-gray-400"
                             }`}
                           ></div>
                         )}
@@ -734,11 +734,10 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            {/* View Mode Controls - Centered and Compact */}
-            <div className="space-y-6">
-              {/* Title Section - Centered */}
+            {/* Mobile Controls */}
+            <div className="flex flex-col gap-4">
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                <h2 className="text-xl font-bold text-gray-900 mb-1">
                   {viewMode === "day"
                     ? selectedDate.toLocaleDateString("en-US", {
                         weekday: "long",
@@ -755,27 +754,19 @@ export default function CalendarPage() {
                           year: "numeric",
                         })}
                 </h2>
-                <p className="text-gray-600 text-lg">
-                  {viewMode === "day"
-                    ? "All dinner slots for this day"
-                    : viewMode === "week"
-                      ? "Dinner slots for this week"
-                      : "All dinner slots for this month"}
-                </p>
               </div>
 
-              {/* Controls Row - Responsive Centered */}
-              <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16">
+              <div className="flex flex-col gap-4">
                 {/* Companionship Filter */}
-                <div className="flex flex-col items-center gap-3">
-                  <label className="text-sm font-semibold text-gray-700">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
                     Filter by Companionship
                   </label>
                   <Select
                     value={selectedCompanionshipId}
                     onValueChange={handleCompanionshipFilterChange}
                   >
-                    <SelectTrigger className="w-full sm:w-60 h-11 shadow-sm border-2">
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -792,19 +783,19 @@ export default function CalendarPage() {
                 </div>
 
                 {/* View mode buttons */}
-                <div className="flex flex-col items-center gap-3">
-                  <label className="text-sm font-semibold text-gray-700">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
                     View Mode
                   </label>
-                  <div className="flex bg-gray-100 rounded-xl p-1.5 shadow-inner">
+                  <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => handleViewChange("month")}
                       className={`
-                        px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200
+                        flex-1 py-2 text-sm font-medium rounded-md transition-colors
                         ${
                           viewMode === "month"
-                            ? "bg-white text-gray-900 shadow-md"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-600 hover:text-gray-900"
                         }
                       `}
                     >
@@ -813,11 +804,11 @@ export default function CalendarPage() {
                     <button
                       onClick={() => handleViewChange("week")}
                       className={`
-                        px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200
+                        flex-1 py-2 text-sm font-medium rounded-md transition-colors
                         ${
                           viewMode === "week"
-                            ? "bg-white text-gray-900 shadow-md"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-600 hover:text-gray-900"
                         }
                       `}
                     >
@@ -826,11 +817,11 @@ export default function CalendarPage() {
                     <button
                       onClick={() => handleViewChange("day")}
                       className={`
-                        px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200
+                        flex-1 py-2 text-sm font-medium rounded-md transition-colors
                         ${
                           viewMode === "day"
-                            ? "bg-white text-gray-900 shadow-md"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-600 hover:text-gray-900"
                         }
                       `}
                     >
@@ -843,8 +834,160 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Unified Card List View */}
-        <div className="space-y-6">
+        {/* Desktop Header & Controls */}
+        <div className="hidden md:block mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {currentDate.toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Sign up to provide dinner for our missionaries
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth("prev")}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth("next")}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            {/* Companionship Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Filter by Companionship:
+              </label>
+              <Select
+                value={selectedCompanionshipId}
+                onValueChange={handleCompanionshipFilterChange}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Companionships</SelectItem>
+                  {Array.from(companionships.entries()).map(
+                    ([id, companionship]) => (
+                      <SelectItem key={id} value={id}>
+                        {companionship.area}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* View mode buttons - Desktop only shows month for now */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => handleViewChange("month")}
+                className="bg-white text-gray-900 shadow-sm px-3 py-1.5 text-sm font-medium rounded-md"
+              >
+                Month View
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Calendar Grid */}
+        <div className="hidden md:block bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+          {/* Days of week header */}
+          <div className="grid grid-cols-7 bg-gray-50 border-b">
+            {[
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+            ].map((day) => (
+              <div
+                key={day}
+                className="p-3 text-center font-medium text-gray-700"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar days */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((day, index) => (
+              <div
+                key={index}
+                className={`min-h-[120px] border-b border-r border-gray-200 p-2 ${
+                  !day.isCurrentMonth ? "bg-gray-50" : ""
+                }`}
+              >
+                <div
+                  className={`text-sm font-medium mb-2 ${
+                    !day.isCurrentMonth ? "text-gray-400" : "text-gray-900"
+                  }`}
+                >
+                  {day.date.getDate()}
+                </div>
+
+                {/* Slots for this day */}
+                <div className="space-y-1">
+                  {day.slots.map((slot) => {
+                    const companionship = companionships.get(
+                      slot.companionshipId,
+                    );
+                    if (!companionship) return null;
+
+                    const isUserSignup = isUserSignedUpForSlot(slot);
+                    const statusColor = isUserSignup
+                      ? "bg-blue-100 border-blue-300 text-blue-800"
+                      : slot.status === "taken"
+                        ? "bg-gray-100 border-gray-300 text-gray-600"
+                        : "bg-green-100 border-green-300 text-green-800 hover:bg-green-200 cursor-pointer";
+
+                    return (
+                      <div
+                        key={`${slot.companionshipId}-${slot.date.getTime()}`}
+                        className={`text-xs p-2 rounded border ${statusColor}`}
+                        onClick={() => handleSlotClick(slot)}
+                      >
+                        <div className="font-medium truncate">
+                          {getCompanionshipName(companionship)}
+                        </div>
+                        <div className="opacity-75">
+                          {isUserSignup
+                            ? "Your Signup"
+                            : slot.status === "taken"
+                              ? "Taken"
+                              : "Available"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Card List View */}
+        <div className="md:hidden space-y-4">
           {getFilteredDays()
             .filter((day) => day.slots.length > 0)
             .map((day, dayIndex) => (
@@ -942,17 +1085,40 @@ export default function CalendarPage() {
                 No dinner slots available
               </h3>
               <div className="text-gray-500 mb-4">
-                No dinner slots found for this {viewMode}
+                No dinner slots found for this month
                 {selectedCompanionshipId !== "all" && (
                   <span> for the selected companionship</span>
                 )}
               </div>
               <div className="text-sm text-gray-400 max-w-md mx-auto">
-                {viewMode === "day"
-                  ? "Try selecting a different day or switching to week/month view"
-                  : selectedCompanionshipId !== "all"
-                    ? "Try selecting 'All Companionships' or choose a different time period"
-                    : "Check back later or contact your admin about setting up companionship schedules"}
+                {selectedCompanionshipId !== "all"
+                  ? "Try selecting 'All Companionships' or choose a different month"
+                  : "Check back later or contact your admin about setting up companionship schedules"}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Empty State */}
+        <div className="hidden md:block">
+          {calendarDays.every((day) => day.slots.length === 0) && (
+            <div className="bg-white rounded-lg shadow-lg border p-12 text-center">
+              <div className="mx-auto w-16 h-16 mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gray-300 rounded"></div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No dinner slots available
+              </h3>
+              <div className="text-gray-500 mb-4">
+                No dinner slots found for this month
+                {selectedCompanionshipId !== "all" && (
+                  <span> for the selected companionship</span>
+                )}
+              </div>
+              <div className="text-sm text-gray-400 max-w-md mx-auto">
+                {selectedCompanionshipId !== "all"
+                  ? "Try selecting 'All Companionships' or choose a different month"
+                  : "Check back later or contact your admin about setting up companionship schedules"}
               </div>
             </div>
           )}
@@ -965,19 +1131,19 @@ export default function CalendarPage() {
           </h4>
           <div className="flex flex-wrap justify-center gap-8">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
+              <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
               <span className="text-sm font-medium text-gray-700">
                 Available
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
+              <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
               <span className="text-sm font-medium text-gray-700">
                 Your Signup
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-gray-500 rounded-full shadow-sm"></div>
+              <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
               <span className="text-sm font-medium text-gray-700">Taken</span>
             </div>
           </div>
