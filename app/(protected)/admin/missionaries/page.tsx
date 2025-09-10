@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -385,7 +386,7 @@ export default function MissionariesPage() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-3 h-full">
                     {/* Allergies */}
                     {missionary.allergies &&
                       missionary.allergies.length > 0 && (
@@ -439,9 +440,10 @@ export default function MissionariesPage() {
                         </p>
                       </div>
                     )}
-
+                  </CardContent>
+                  <CardFooter>
                     {/* Actions */}
-                    <div className="flex gap-2 pt-3">
+                    <div className="flex gap-2 pt-3 w-full">
                       <Button
                         variant="outline"
                         size="sm"
@@ -460,7 +462,7 @@ export default function MissionariesPage() {
                         Delete
                       </Button>
                     </div>
-                  </CardContent>
+                  </CardFooter>
                 </Card>
               );
             })}
