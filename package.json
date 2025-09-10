@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev --turbopack",
+    "emulators:start": "firebase emulators:start",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint"
