@@ -894,16 +894,6 @@ export default function CalendarPage() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* View mode buttons - Desktop only shows month for now */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => handleViewChange("month")}
-                className="bg-white text-gray-900 shadow-sm px-3 py-1.5 text-sm font-medium rounded-md"
-              >
-                Month View
-              </button>
-            </div>
           </div>
         </div>
 
