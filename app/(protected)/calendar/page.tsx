@@ -37,6 +37,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -120,6 +121,9 @@ export default function CalendarPage() {
   const [contactInfoOpen, setContactInfoOpen] = useState(false);
   const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Display preferences
+  const [displayMode, setDisplayMode] = useState<"area" | "name">("area");
 
   // Form state
   const [signupForm, setSignupForm] = useState({
@@ -416,7 +420,21 @@ export default function CalendarPage() {
     if (savedFilter) {
       setSelectedCompanionshipId(savedFilter);
     }
+
+    const savedDisplayMode = localStorage.getItem("calendar-display-mode") as
+      | "area"
+      | "name";
+    if (savedDisplayMode) {
+      setDisplayMode(savedDisplayMode);
+    }
   }, []);
+
+  const getCompanionshipDisplayName = (companionship: Companionship) => {
+    if (displayMode === "area") {
+      return companionship.area;
+    }
+    return getCompanionshipName(companionship);
+  };
 
   const getCompanionshipName = (companionship: Companionship) => {
     const companionshipMissionaries = companionship.missionaryIds
@@ -774,7 +792,7 @@ export default function CalendarPage() {
                       {Array.from(companionships.entries()).map(
                         ([id, companionship]) => (
                           <SelectItem key={id} value={id}>
-                            {companionship.area}
+                            {getCompanionshipDisplayName(companionship)}
                           </SelectItem>
                         ),
                       )}
@@ -887,13 +905,28 @@ export default function CalendarPage() {
                   {Array.from(companionships.entries()).map(
                     ([id, companionship]) => (
                       <SelectItem key={id} value={id}>
-                        {companionship.area}
+                        {getCompanionshipDisplayName(companionship)}
                       </SelectItem>
                     ),
                   )}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Settings Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newMode = displayMode === "area" ? "name" : "area";
+                setDisplayMode(newMode);
+                localStorage.setItem("calendar-display-mode", newMode);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              {displayMode === "area" ? "Show Names" : "Show Areas"}
+            </Button>
           </div>
         </div>
 
@@ -958,7 +991,7 @@ export default function CalendarPage() {
                         onClick={() => handleSlotClick(slot)}
                       >
                         <div className="font-medium truncate">
-                          {getCompanionshipName(companionship)}
+                          {getCompanionshipDisplayName(companionship)}
                         </div>
                         <div className="opacity-75">
                           {isUserSignup
@@ -1022,7 +1055,7 @@ export default function CalendarPage() {
                           <div className="space-y-3">
                             <div>
                               <div className="font-bold text-lg text-gray-900 mb-1">
-                                {getCompanionshipName(companionship)}
+                                {getCompanionshipDisplayName(companionship)}
                               </div>
                               <div className="text-sm text-gray-600">
                                 {companionship.area}
