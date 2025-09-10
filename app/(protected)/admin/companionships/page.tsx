@@ -36,7 +36,6 @@ import {
 import { Companionship, Missionary } from "@/types";
 import {
   AlertTriangle,
-  ArrowLeft,
   Edit,
   Loader2,
   Mail,
@@ -48,7 +47,6 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // Helper function to generate companionship display name from missionaries
@@ -75,7 +73,6 @@ const generateCompanionshipName = (
 
 export default function CompanionshipsPage() {
   const { user } = useAuth();
-  const router = useRouter();
   const [companionships, setCompanionships] = useState<Companionship[]>([]);
   const [filteredCompanionships, setFilteredCompanionships] = useState<
     Companionship[]
@@ -453,79 +450,59 @@ export default function CompanionshipsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/admin")}
-                className="flex items-center gap-2 w-fit"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Admin
-              </Button>
-              <div>
-                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="h-5 w-5 sm:h-8 sm:w-8" />
-                  Companionship Management
-                </h1>
-                <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                  Manage companionships, assignments, and dinner coordination
-                </p>
-              </div>
+      {/* Compact Header with Search and Controls */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-2">
+            <Users className="h-6 w-6" />
+            Companionship Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage companionships, assignments, and dinner coordination
+          </p>
+        </div>
+
+        <div className="bg-white rounded-lg border p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search by missionary names or area..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
             </div>
-            {/* Desktop Add Button */}
+
+            {/* Status Filter */}
+            <Select
+              value={filterStatus}
+              onValueChange={(value: "all" | "incomplete") =>
+                setFilterStatus(value)
+              }
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Companionships</SelectItem>
+                <SelectItem value="incomplete">
+                  Incomplete (Needs Missionaries)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Add Companionship Button */}
             <Button
               onClick={openAddModal}
-              className="hidden lg:flex items-center gap-2"
+              className="flex items-center gap-2 whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
               Add Companionship
             </Button>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters and Search */}
-        <Card className="mb-6">
-          <CardHeader className="pb-4">
-            <CardTitle>Search & Filter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by missionary names or area..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select
-                value={filterStatus}
-                onValueChange={(value: "all" | "incomplete") =>
-                  setFilterStatus(value)
-                }
-              >
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Companionships</SelectItem>
-                  <SelectItem value="incomplete">
-                    Incomplete (Needs Missionaries)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Error Display */}
         {error && (
@@ -1324,6 +1301,18 @@ export default function CompanionshipsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Floating Action Button */}
+      <Button
+        onClick={() => {
+          resetForm();
+          setShowAddModal(true);
+        }}
+        size="lg"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg sm:hidden"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
     </div>
   );
 }

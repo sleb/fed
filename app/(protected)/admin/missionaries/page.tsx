@@ -36,7 +36,6 @@ import {
 import { Companionship, Missionary } from "@/types";
 import {
   AlertTriangle,
-  ArrowLeft,
   Loader2,
   Mail,
   Plus,
@@ -45,12 +44,11 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+
 import { useEffect, useState } from "react";
 
 export default function MissionariesPage() {
   const { user } = useAuth();
-  const router = useRouter();
   const [missionaries, setMissionaries] = useState<Missionary[]>([]);
   const [filteredMissionaries, setFilteredMissionaries] = useState<
     Missionary[]
@@ -232,13 +230,6 @@ export default function MissionariesPage() {
             <Skeleton className="h-10 w-24" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <Skeleton className="h-10 flex-1" />
             <Skeleton className="h-10 w-32" />
@@ -278,43 +269,17 @@ export default function MissionariesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.back()}
-                className="flex items-center gap-2 w-fit"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  Missionary Management
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Create and manage individual missionary records
-                </p>
-              </div>
-            </div>
-            {/* Desktop Add Button */}
-            <Button
-              onClick={openAddModal}
-              className="hidden lg:flex items-center gap-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add Missionary
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters and Search */}
+      {/* Compact Header with Search and Controls */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Missionary Management
+          </h1>
+          <p className="text-muted-foreground">
+            Create and manage individual missionary records
+          </p>
+        </div>
+
         <div className="bg-white rounded-lg border p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
@@ -346,6 +311,15 @@ export default function MissionariesPage() {
                 <SelectItem value="unassigned">Unassigned</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Add Missionary Button */}
+            <Button
+              onClick={openAddModal}
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add Missionary
+            </Button>
           </div>
         </div>
 
@@ -356,48 +330,6 @@ export default function MissionariesPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
-        {/* Stats - Compact Mobile Layout */}
-        <div className="bg-white rounded-lg border p-3 sm:p-4 mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="text-center">
-              <div className="text-lg sm:text-2xl font-bold">
-                {missionaries.length}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Total
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg sm:text-2xl font-bold text-blue-600">
-                {(() => {
-                  const assignedIds = new Set(
-                    companionships.flatMap((c) => c.missionaryIds),
-                  );
-                  return missionaries.filter((m) => assignedIds.has(m.id))
-                    .length;
-                })()}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Assigned
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg sm:text-2xl font-bold text-orange-600">
-                {(() => {
-                  const assignedIds = new Set(
-                    companionships.flatMap((c) => c.missionaryIds),
-                  );
-                  return missionaries.filter((m) => !assignedIds.has(m.id))
-                    .length;
-                })()}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Unassigned
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Missionaries Grid */}
         {filteredMissionaries.length === 0 ? (
@@ -808,6 +740,15 @@ export default function MissionariesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Floating Action Button */}
+      <Button
+        onClick={openAddModal}
+        size="lg"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg sm:hidden"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
     </div>
   );
 }
