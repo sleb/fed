@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { Resend } from "resend";
+import { Companionship, SignupFirestore } from "./types.js";
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -14,39 +15,6 @@ const resend =
     ? new Resend(process.env.RESEND_API_KEY)
     : null;
 
-interface Signup {
-  id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  userPhone: string;
-  companionshipId: string;
-  dinnerDate: admin.firestore.Timestamp;
-  dayOfWeek: string;
-  guestCount: number;
-  status: string;
-  contactPreference: string;
-  reminderSent: boolean;
-  notes: string;
-  createdAt: admin.firestore.Timestamp;
-  updatedAt: admin.firestore.Timestamp;
-}
-
-interface Companionship {
-  id: string;
-  area: string;
-  missionaries: Array<{
-    id: string;
-    name: string;
-    email: string;
-  }>;
-  schedules: Array<{
-    dayOfWeek: string;
-    guestCount: number;
-    isActive: boolean;
-  }>;
-}
-
 // Function triggered when a new signup is created
 export const onSignupCreated = onDocumentCreated(
   "signups/{signupId}",
@@ -57,7 +25,12 @@ export const onSignupCreated = onDocumentCreated(
       return;
     }
 
-    const signup = { id: snap.id, ...snap.data() } as Signup;
+    const signupData = snap.data();
+    if (!signupData) {
+      console.log("No signup data found");
+      return;
+    }
+    const signup = { id: snap.id, ...signupData } as SignupFirestore;
 
     try {
       // Get companionship details
@@ -94,7 +67,7 @@ export const onSignupCreated = onDocumentCreated(
 );
 
 async function sendConfirmationEmail(
-  signup: Signup,
+  signup: SignupFirestore,
   companionship: Companionship,
 ) {
   const dinnerDate = signup.dinnerDate.toDate();
@@ -105,9 +78,28 @@ async function sendConfirmationEmail(
     day: "numeric",
   });
 
-  const missionaryNames = companionship.missionaries
-    .map((m) => m.name)
-    .join(" & ");
+  // Get missionary names by fetching missionary documents
+  let missionaryNames = companionship.area; // Fallback to area name
+  try {
+    if (companionship.missionaryIds && companionship.missionaryIds.length > 0) {
+      const missionaryDocs = await Promise.all(
+        companionship.missionaryIds.map((id: string) =>
+          admin.firestore().collection("missionaries").doc(id).get(),
+        ),
+      );
+
+      const missionaries = missionaryDocs
+        .filter((doc: admin.firestore.DocumentSnapshot) => doc.exists)
+        .map((doc: admin.firestore.DocumentSnapshot) => doc.data()?.name)
+        .filter(Boolean);
+
+      if (missionaries.length > 0) {
+        missionaryNames = missionaries.sort().join(" & ");
+      }
+    }
+  } catch (error) {
+    console.log("Could not fetch missionary names, using area name:", error);
+  }
 
   const emailHtml = `
     <!DOCTYPE html>
