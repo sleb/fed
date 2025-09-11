@@ -8,14 +8,14 @@ import { Companionship, SignupFirestore } from "./types.js";
 admin.initializeApp();
 
 // Email configuration from environment variables (required)
-const EMAIL_FROM = defineString("EMAIL_FROM").value();
+const EMAIL_FROM = defineString("EMAIL_FROM");
 if (!EMAIL_FROM) {
   throw new Error(
     "EMAIL_FROM environment variable is required. Set it to something like 'Your App Name <noreply@yourdomain.com>'",
   );
 }
 
-const APP_BASE_URL = defineString("APP_BASE_URL").value();
+const APP_BASE_URL = defineString("APP_BASE_URL");
 if (!APP_BASE_URL) {
   throw new Error(
     "APP_BASE_URL environment variable is required. Set it to your application's base URL like 'https://yourdomain.com'",
@@ -27,10 +27,11 @@ const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
 
 // Define secret for Resend API key
 const RESEND_API_KEY = defineSecret("RESEND_API_KEY");
-
-// Initialize Resend (only if not in emulator and API key is provided)
-const resend =
-  !isEmulator && RESEND_API_KEY ? new Resend(RESEND_API_KEY.value()) : null;
+if (!RESEND_API_KEY) {
+  throw new Error(
+    "RESEND_API_KEY secret is required. Set it in your Firebase project secrets.",
+  );
+}
 
 // Collection to track pending email batches
 const PENDING_EMAILS_COLLECTION = "pendingEmailBatches";
@@ -286,7 +287,7 @@ async function sendBatchedConfirmationEmail(
   // Emulator mode: log email instead of sending
   if (isEmulator) {
     console.log("=== EMULATOR MODE: Batched email would be sent ===");
-    console.log("From:", EMAIL_FROM);
+    console.log("From:", EMAIL_FROM.value());
     console.log("To:", userEmail);
     console.log("Subject:", subject);
     console.log("Signups count:", validSignupDetails.length);
@@ -296,14 +297,9 @@ async function sendBatchedConfirmationEmail(
     return;
   }
 
-  // Production mode: check for API key
-  if (!resend) {
-    console.error("RESEND_API_KEY not configured - email not sent");
-    throw new Error("Email service not properly configured");
-  }
-
+  const resend = new Resend(RESEND_API_KEY.value());
   await resend.emails.send({
-    from: EMAIL_FROM,
+    from: EMAIL_FROM.value(),
     to: [userEmail],
     subject,
     html: emailHtml,
@@ -470,7 +466,7 @@ function generateBatchedEmailHtml(
           ${signupRows}
 
           <div class="actions">
-            <a href="${APP_BASE_URL}/calendar" class="btn btn-primary">
+            <a href="${APP_BASE_URL.value()}/calendar" class="btn btn-primary">
               View Calendar
             </a>
           </div>
@@ -524,7 +520,7 @@ ${
 
 ${signupText}
 
-You can view your signup${isMultiple ? "s" : ""} or make changes at: ${APP_BASE_URL}/calendar
+You can view your signup${isMultiple ? "s" : ""} or make changes at: ${APP_BASE_URL.value()}/calendar
 
 Thanks for your service!
   `;
