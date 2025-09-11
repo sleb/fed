@@ -6,7 +6,7 @@ This directory contains Firebase Cloud Functions that handle email notifications
 
 - **Signup Confirmation Emails**: Automatically sends HTML confirmation emails when members sign up for dinner slots
 - **Real-time Triggers**: Uses Firestore triggers to ensure reliable email delivery
-- **Test Mode**: Can run in test mode for development without sending actual emails
+- **Emulator Mode**: Automatically detects emulator environment and logs emails instead of sending them
 
 ## Setup
 
@@ -53,11 +53,13 @@ firebase deploy --only functions
 
 ## Local Development
 
-### Test Mode
+### Emulator Mode
 
-The function automatically runs in test mode when:
-- `RESEND_API_KEY` is missing or set to `test_mode`
+The function automatically detects when running in the Firebase emulator:
+
+- Uses `FUNCTIONS_EMULATOR` environment variable for detection
 - Emails are logged to console instead of being sent
+- No API key required for emulator testing
 
 ### Running Emulators
 
@@ -93,6 +95,7 @@ Create a test signup document in Firestore to trigger the email function:
 ## Email Template
 
 The confirmation email includes:
+
 - Welcome message and confirmation
 - Event details (date, missionaries, area, guest count)
 - User's notes (if provided)
@@ -126,8 +129,9 @@ Log success/failure
 ### Common Issues
 
 1. **Function not triggering**: Check Firestore rules allow document creation
-2. **Email not sending**: Verify `RESEND_API_KEY` and domain configuration
+2. **Email not sending in production**: Verify `RESEND_API_KEY` and domain configuration
 3. **Build errors**: Run `npm run build` in functions directory
+4. **Emulator not logging emails**: Check that `FUNCTIONS_EMULATOR=true` is set
 
 ### Checking Logs
 

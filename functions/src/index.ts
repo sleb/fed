@@ -5,10 +5,14 @@ import { Resend } from "resend";
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Initialize Resend (only if API key is provided)
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+// Check if running in emulator
+const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
+
+// Initialize Resend (only if not in emulator and API key is provided)
+const resend =
+  !isEmulator && process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
 interface Signup {
   id: string;
@@ -276,9 +280,9 @@ async function sendConfirmationEmail(
     Thanks for your service!
   `;
 
-  // Test mode: log email instead of sending if no API key
-  if (!resend || !process.env.RESEND_API_KEY) {
-    console.log("=== TEST MODE: Email would be sent ===");
+  // Emulator mode: log email instead of sending
+  if (isEmulator) {
+    console.log("=== EMULATOR MODE: Email would be sent ===");
     console.log(
       "From:",
       `Missionary Dinner Calendar <noreply@${process.env.EMAIL_FROM_DOMAIN}>`,
@@ -287,8 +291,14 @@ async function sendConfirmationEmail(
     console.log("Subject:", `Dinner Confirmed - ${formattedDate}`);
     console.log("HTML Length:", emailHtml.length);
     console.log("Text:", emailText);
-    console.log("=== End Test Mode ===");
+    console.log("=== End Emulator Mode ===");
     return;
+  }
+
+  // Production mode: check for API key
+  if (!resend || !process.env.RESEND_API_KEY) {
+    console.error("RESEND_API_KEY not configured - email not sent");
+    throw new Error("Email service not properly configured");
   }
 
   await resend.emails.send({
