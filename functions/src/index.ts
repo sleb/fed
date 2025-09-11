@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { defineSecret } from "firebase-functions/params";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { Resend } from "resend";
 import { Companionship, SignupFirestore } from "./types.js";
@@ -6,18 +7,30 @@ import { Companionship, SignupFirestore } from "./types.js";
 // Initialize Firebase Admin
 admin.initializeApp();
 
+// Hardcoded constants for email configuration
+const EMAIL_FROM = "Missionary Dinner Calendar <noreply@well-fed.app>";
+const APP_BASE_URL = "https://well-fed.app";
+
 // Check if running in emulator
 const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
 
+// Define secret for Resend API key
+const resendApiKey = defineSecret("RESEND_API_KEY");
+
 // Initialize Resend (only if not in emulator and API key is provided)
 const resend =
-  !isEmulator && process.env.RESEND_API_KEY
-    ? new Resend(process.env.RESEND_API_KEY)
-    : null;
+  !isEmulator && resendApiKey ? new Resend(resendApiKey.value()) : null;
+
+// Collection to track pending email batches
+const PENDING_EMAILS_COLLECTION = "pendingEmailBatches";
+const BATCH_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 // Function triggered when a new signup is created
 export const onSignupCreated = onDocumentCreated(
-  "signups/{signupId}",
+  {
+    document: "signups/{signupId}",
+    secrets: [resendApiKey],
+  },
   async (event) => {
     const snap = event.data;
     if (!snap) {
@@ -33,81 +46,312 @@ export const onSignupCreated = onDocumentCreated(
     const signup = { id: snap.id, ...signupData } as SignupFirestore;
 
     try {
-      // Get companionship details
-      const companionshipDoc = await admin
-        .firestore()
-        .collection("companionships")
-        .doc(signup.companionshipId)
-        .get();
-
-      if (!companionshipDoc.exists) {
-        console.error("Companionship not found:", signup.companionshipId);
-        return;
-      }
-
-      const companionship = {
-        id: companionshipDoc.id,
-        ...companionshipDoc.data(),
-      } as Companionship;
-
-      // Send confirmation email
-      await sendConfirmationEmail(signup, companionship);
+      // Add signup to pending email batch instead of sending immediately
+      await addToPendingBatch(signup);
 
       console.log(
-        "Confirmation email sent successfully for signup:",
-        signup.id,
+        `Signup ${signup.id} added to pending email batch for user ${signup.userId}`,
       );
     } catch (error) {
-      console.log("Failed to send confirmation email:", error);
-
-      // TODO: In future milestone, notify administrators of email failure
-      // For now, we just log the error and don't fail the signup
+      console.log("Failed to add signup to pending batch:", error);
     }
   },
 );
 
-async function sendConfirmationEmail(
-  signup: SignupFirestore,
-  companionship: Companionship,
+async function addToPendingBatch(signup: SignupFirestore) {
+  const db = admin.firestore();
+  const batchId = `${signup.userId}_${Date.now()}`;
+  const batchRef = db.collection(PENDING_EMAILS_COLLECTION).doc(batchId);
+
+  // Check if there's already a pending batch for this user
+  const existingBatchQuery = await db
+    .collection(PENDING_EMAILS_COLLECTION)
+    .where("userId", "==", signup.userId)
+    .where("processed", "==", false)
+    .limit(1)
+    .get();
+
+  if (!existingBatchQuery.empty) {
+    // Add to existing batch
+    const existingBatchDoc = existingBatchQuery.docs[0];
+    const existingData = existingBatchDoc.data();
+
+    await existingBatchDoc.ref.update({
+      signupIds: admin.firestore.FieldValue.arrayUnion(signup.id),
+      lastSignupAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(
+      `Added signup ${signup.id} to existing batch ${existingBatchDoc.id}`,
+    );
+  } else {
+    // Create new batch
+    const scheduledSendTime = admin.firestore.Timestamp.fromMillis(
+      Date.now() + BATCH_DELAY_MS,
+    );
+
+    await batchRef.set({
+      userId: signup.userId,
+      userEmail: signup.userEmail,
+      userName: signup.userName,
+      signupIds: [signup.id],
+      scheduledSendTime,
+      createdAt: admin.firestore.Timestamp.now(),
+      lastSignupAt: admin.firestore.Timestamp.now(),
+      processed: false,
+    });
+
+    console.log(`Created new email batch ${batchId} for user ${signup.userId}`);
+
+    // Schedule the batch processing
+    setTimeout(async () => {
+      await processPendingBatch(batchId);
+    }, BATCH_DELAY_MS);
+  }
+}
+
+async function processPendingBatch(batchId: string) {
+  const db = admin.firestore();
+  const batchRef = db.collection(PENDING_EMAILS_COLLECTION).doc(batchId);
+
+  try {
+    const batchDoc = await batchRef.get();
+    if (!batchDoc.exists) {
+      console.log(`Batch ${batchId} no longer exists`);
+      return;
+    }
+
+    const batchData = batchDoc.data();
+    if (batchData?.processed) {
+      console.log(`Batch ${batchId} already processed`);
+      return;
+    }
+
+    // Get all signups in this batch
+    const signupPromises = batchData?.signupIds.map((signupId: string) =>
+      db.collection("signups").doc(signupId).get(),
+    );
+
+    const signupDocs = await Promise.all(signupPromises);
+    const signups = signupDocs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as SignupFirestore);
+
+    if (signups.length === 0) {
+      console.log(`No valid signups found for batch ${batchId}`);
+      await batchRef.update({ processed: true });
+      return;
+    }
+
+    // Send batched confirmation email
+    await sendBatchedConfirmationEmail(
+      signups,
+      batchData?.userEmail,
+      batchData?.userName,
+    );
+
+    // Mark batch as processed
+    await batchRef.update({
+      processed: true,
+      processedAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(
+      `Successfully processed batch ${batchId} with ${signups.length} signups`,
+    );
+  } catch (error) {
+    console.error(`Failed to process batch ${batchId}:`, error);
+
+    // Mark as processed to prevent infinite retries
+    await batchRef.update({
+      processed: true,
+      processedAt: admin.firestore.Timestamp.now(),
+      error: error?.toString(),
+    });
+  }
+}
+
+async function sendBatchedConfirmationEmail(
+  signups: SignupFirestore[],
+  userEmail: string,
+  userName: string,
 ) {
-  const dinnerDate = signup.dinnerDate.toDate();
-  const formattedDate = dinnerDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  // Get companionship details for all signups
+  const companionshipIds = [...new Set(signups.map((s) => s.companionshipId))];
+  const companionshipDocs = await Promise.all(
+    companionshipIds.map((id) =>
+      admin.firestore().collection("companionships").doc(id).get(),
+    ),
+  );
+
+  const companionships = new Map<string, Companionship>();
+  companionshipDocs.forEach((doc) => {
+    if (doc.exists) {
+      companionships.set(doc.id, {
+        id: doc.id,
+        ...doc.data(),
+      } as Companionship);
+    }
   });
 
-  // Get missionary names by fetching missionary documents
-  let missionaryNames = companionship.area; // Fallback to area name
-  try {
-    if (companionship.missionaryIds && companionship.missionaryIds.length > 0) {
-      const missionaryDocs = await Promise.all(
-        companionship.missionaryIds.map((id: string) =>
-          admin.firestore().collection("missionaries").doc(id).get(),
-        ),
-      );
+  // Group signups with their companionship data and get missionary names
+  const signupDetails = await Promise.all(
+    signups.map(async (signup) => {
+      const companionship = companionships.get(signup.companionshipId);
+      if (!companionship) return null;
 
-      const missionaries = missionaryDocs
-        .filter((doc: admin.firestore.DocumentSnapshot) => doc.exists)
-        .map((doc: admin.firestore.DocumentSnapshot) => doc.data()?.name)
-        .filter(Boolean);
+      // Get missionary names
+      let missionaryNames = companionship.area;
+      try {
+        if (
+          companionship.missionaryIds &&
+          companionship.missionaryIds.length > 0
+        ) {
+          const missionaryDocs = await Promise.all(
+            companionship.missionaryIds.map((id: string) =>
+              admin.firestore().collection("missionaries").doc(id).get(),
+            ),
+          );
 
-      if (missionaries.length > 0) {
-        missionaryNames = missionaries.sort().join(" & ");
+          const missionaries = missionaryDocs
+            .filter((doc: admin.firestore.DocumentSnapshot) => doc.exists)
+            .map((doc: admin.firestore.DocumentSnapshot) => doc.data()?.name)
+            .filter(Boolean);
+
+          if (missionaries.length > 0) {
+            missionaryNames = missionaries.sort().join(" & ");
+          }
+        }
+      } catch (error) {
+        console.log(
+          "Could not fetch missionary names, using area name:",
+          error,
+        );
       }
-    }
-  } catch (error) {
-    console.log("Could not fetch missionary names, using area name:", error);
+
+      return {
+        signup,
+        companionship,
+        missionaryNames,
+        formattedDate: signup.dinnerDate.toDate().toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+      };
+    }),
+  );
+
+  const validSignupDetails = signupDetails.filter(
+    (detail): detail is NonNullable<typeof detail> => detail !== null,
+  );
+  if (validSignupDetails.length === 0) {
+    console.log("No valid signup details found for email");
+    return;
   }
 
-  const emailHtml = `
+  // Sort by dinner date
+  validSignupDetails.sort(
+    (a, b) => a!.signup.dinnerDate.toMillis() - b!.signup.dinnerDate.toMillis(),
+  );
+
+  const isMultiple = validSignupDetails.length > 1;
+  const subject = isMultiple
+    ? `${validSignupDetails.length} Dinner Signups Confirmed`
+    : `Dinner Confirmed - ${validSignupDetails[0]!.formattedDate}`;
+
+  const emailHtml = generateBatchedEmailHtml(
+    validSignupDetails,
+    userName,
+    isMultiple,
+  );
+  const emailText = generateBatchedEmailText(
+    validSignupDetails,
+    userName,
+    isMultiple,
+  );
+
+  // Emulator mode: log email instead of sending
+  if (isEmulator) {
+    console.log("=== EMULATOR MODE: Batched email would be sent ===");
+    console.log("From:", EMAIL_FROM);
+    console.log("To:", userEmail);
+    console.log("Subject:", subject);
+    console.log("Signups count:", validSignupDetails.length);
+    console.log("HTML Length:", emailHtml.length);
+    console.log("Text:", emailText);
+    console.log("=== End Emulator Mode ===");
+    return;
+  }
+
+  // Production mode: check for API key
+  if (!resend) {
+    console.error("RESEND_API_KEY not configured - email not sent");
+    throw new Error("Email service not properly configured");
+  }
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: [userEmail],
+    subject,
+    html: emailHtml,
+    text: emailText,
+  });
+}
+
+function generateBatchedEmailHtml(
+  signupDetails: Array<{
+    signup: SignupFirestore;
+    companionship: Companionship;
+    missionaryNames: string;
+    formattedDate: string;
+  }>,
+  userName: string,
+  isMultiple: boolean,
+): string {
+  const signupRows = signupDetails
+    .map(
+      (detail) => `
+    <div class="signup-item">
+      <div class="detail-row">
+        <span class="detail-label">Date:</span>
+        <span class="detail-value">${detail.formattedDate}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Missionaries:</span>
+        <span class="detail-value">${detail.missionaryNames}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Area:</span>
+        <span class="detail-value">${detail.companionship.area}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Number of Guests:</span>
+        <span class="detail-value">${detail.signup.guestCount}</span>
+      </div>
+      ${
+        detail.signup.notes
+          ? `
+      <div class="detail-row">
+        <span class="detail-label">Your Notes:</span>
+        <span class="detail-value">${detail.signup.notes}</span>
+      </div>
+      `
+          : ""
+      }
+    </div>
+  `,
+    )
+    .join("");
+
+  return `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dinner Signup Confirmation</title>
+        <title>Dinner Signup${isMultiple ? "s" : ""} Confirmed</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -131,12 +375,15 @@ async function sendConfirmationEmail(
             border: 1px solid #e2e8f0;
             border-top: none;
           }
-          .details {
+          .signup-item {
             background: white;
             padding: 20px;
             border-radius: 8px;
             margin: 20px 0;
             border-left: 4px solid #667eea;
+          }
+          .signup-item:first-child {
+            margin-top: 0;
           }
           .detail-row {
             display: flex;
@@ -173,10 +420,6 @@ async function sendConfirmationEmail(
             background-color: #667eea;
             color: white;
           }
-          .btn-secondary {
-            background-color: #64748b;
-            color: white;
-          }
           .footer {
             text-align: center;
             margin-top: 30px;
@@ -194,55 +437,34 @@ async function sendConfirmationEmail(
       </head>
       <body>
         <div class="header">
-          <h1 style="margin: 0; font-size: 28px;">Dinner Confirmed! 🍽️</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9;">Thank you for signing up to host the missionaries</p>
+          <h1 style="margin: 0; font-size: 28px;">
+            ${isMultiple ? `${signupDetails.length} Dinners` : "Dinner"} Confirmed! 🍽️
+          </h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">
+            Thank you for signing up to host the missionaries
+          </p>
         </div>
 
         <div class="content">
-          <p>Hi ${signup.userName},</p>
+          <p>Hi ${userName},</p>
 
-          <p>Your dinner signup has been confirmed! We're excited that you'll be hosting the missionaries.</p>
-
-          <div class="details">
-            <h3 style="margin-top: 0; color: #334155;">Event Details</h3>
-            <div class="detail-row">
-              <span class="detail-label">Date:</span>
-              <span class="detail-value">${formattedDate}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Missionaries:</span>
-              <span class="detail-value">${missionaryNames}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Area:</span>
-              <span class="detail-value">${companionship.area}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Number of Guests:</span>
-              <span class="detail-value">${signup.guestCount}</span>
-            </div>
+          <p>
             ${
-              signup.notes
-                ? `
-            <div class="detail-row">
-              <span class="detail-label">Your Notes:</span>
-              <span class="detail-value">${signup.notes}</span>
-            </div>
-            `
-                : ""
+              isMultiple
+                ? `Your ${signupDetails.length} dinner signups have been confirmed! We're excited that you'll be hosting the missionaries multiple times.`
+                : `Your dinner signup has been confirmed! We're excited that you'll be hosting the missionaries.`
             }
-          </div>
+          </p>
+
+          ${signupRows}
 
           <div class="actions">
-            <a href="${process.env.APP_BASE_URL}/calendar" class="btn btn-primary">
+            <a href="${APP_BASE_URL}/calendar" class="btn btn-primary">
               View Calendar
-            </a>
-            <a href="${process.env.APP_BASE_URL}/calendar?signup=${signup.id}" class="btn btn-secondary">
-              Change/Cancel
             </a>
           </div>
 
-          <p>If you need to make any changes or have questions about your signup, you can use the links above or contact your local leadership.</p>
+          <p>If you need to make any changes or have questions about your signup${isMultiple ? "s" : ""}, you can use the link above or contact your local leadership.</p>
 
           <p>Thanks again for your service!</p>
         </div>
@@ -253,51 +475,49 @@ async function sendConfirmationEmail(
       </body>
     </html>
   `;
-
-  const emailText = `
-    Dinner Confirmation
-
-    Hi ${signup.userName},
-
-    Your dinner signup has been confirmed! Here are the details:
-
-    Date: ${formattedDate}
-    Missionaries: ${missionaryNames}
-    Area: ${companionship.area}
-    Number of Guests: ${signup.guestCount}
-    ${signup.notes ? `Your Notes: ${signup.notes}` : ""}
-
-    You can view your signup or make changes at: ${process.env.APP_BASE_URL}/calendar
-
-    Thanks for your service!
-  `;
-
-  // Emulator mode: log email instead of sending
-  if (isEmulator) {
-    console.log("=== EMULATOR MODE: Email would be sent ===");
-    console.log(
-      "From:",
-      `Missionary Dinner Calendar <noreply@${process.env.EMAIL_FROM_DOMAIN}>`,
-    );
-    console.log("To:", signup.userEmail);
-    console.log("Subject:", `Dinner Confirmed - ${formattedDate}`);
-    console.log("HTML Length:", emailHtml.length);
-    console.log("Text:", emailText);
-    console.log("=== End Emulator Mode ===");
-    return;
-  }
-
-  // Production mode: check for API key
-  if (!resend || !process.env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured - email not sent");
-    throw new Error("Email service not properly configured");
-  }
-
-  await resend.emails.send({
-    from: `Missionary Dinner Calendar <noreply@${process.env.EMAIL_FROM_DOMAIN}>`,
-    to: [signup.userEmail],
-    subject: `Dinner Confirmed - ${formattedDate}`,
-    html: emailHtml,
-    text: emailText,
-  });
 }
+
+function generateBatchedEmailText(
+  signupDetails: Array<{
+    signup: SignupFirestore;
+    companionship: Companionship;
+    missionaryNames: string;
+    formattedDate: string;
+  }>,
+  userName: string,
+  isMultiple: boolean,
+): string {
+  const signupText = signupDetails
+    .map(
+      (detail, index) => `
+${isMultiple ? `Signup ${index + 1}:` : ""}
+Date: ${detail.formattedDate}
+Missionaries: ${detail.missionaryNames}
+Area: ${detail.companionship.area}
+Number of Guests: ${detail.signup.guestCount}
+${detail.signup.notes ? `Your Notes: ${detail.signup.notes}` : ""}
+  `,
+    )
+    .join("\n");
+
+  return `
+Dinner${isMultiple ? "s" : ""} Confirmed
+
+Hi ${userName},
+
+${
+  isMultiple
+    ? `Your ${signupDetails.length} dinner signups have been confirmed! Here are the details:`
+    : `Your dinner signup has been confirmed! Here are the details:`
+}
+
+${signupText}
+
+You can view your signup${isMultiple ? "s" : ""} or make changes at: ${APP_BASE_URL}/calendar
+
+Thanks for your service!
+  `;
+}
+
+// This function is no longer used - replaced by batched email system
+// Keeping for reference in case we need to fall back to immediate emails
