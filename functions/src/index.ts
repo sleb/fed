@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { defineSecret } from "firebase-functions/params";
+import { defineSecret, defineString } from "firebase-functions/params";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { Resend } from "resend";
 import { Companionship, SignupFirestore } from "./types.js";
@@ -7,19 +7,30 @@ import { Companionship, SignupFirestore } from "./types.js";
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Hardcoded constants for email configuration
-const EMAIL_FROM = "Missionary Dinner Calendar <noreply@well-fed.app>";
-const APP_BASE_URL = "https://well-fed.app";
+// Email configuration from environment variables (required)
+const EMAIL_FROM = defineString("EMAIL_FROM").value();
+if (!EMAIL_FROM) {
+  throw new Error(
+    "EMAIL_FROM environment variable is required. Set it to something like 'Your App Name <noreply@yourdomain.com>'",
+  );
+}
+
+const APP_BASE_URL = defineString("APP_BASE_URL").value();
+if (!APP_BASE_URL) {
+  throw new Error(
+    "APP_BASE_URL environment variable is required. Set it to your application's base URL like 'https://yourdomain.com'",
+  );
+}
 
 // Check if running in emulator
 const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
 
 // Define secret for Resend API key
-const resendApiKey = defineSecret("RESEND_API_KEY");
+const RESEND_API_KEY = defineSecret("RESEND_API_KEY");
 
 // Initialize Resend (only if not in emulator and API key is provided)
 const resend =
-  !isEmulator && resendApiKey ? new Resend(resendApiKey.value()) : null;
+  !isEmulator && RESEND_API_KEY ? new Resend(RESEND_API_KEY.value()) : null;
 
 // Collection to track pending email batches
 const PENDING_EMAILS_COLLECTION = "pendingEmailBatches";
@@ -29,7 +40,7 @@ const BATCH_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 export const onSignupCreated = onDocumentCreated(
   {
     document: "signups/{signupId}",
-    secrets: [resendApiKey],
+    secrets: [RESEND_API_KEY],
   },
   async (event) => {
     const snap = event.data;
