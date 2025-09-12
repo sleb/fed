@@ -15,6 +15,7 @@ import { EmulatorUtils } from "@/lib/firebase/emulatorUtils";
 import { seedDatabase } from "@/lib/firebase/seedData";
 import {
   AlertTriangle,
+  BarChart3,
   Bug,
   Database,
   Loader2,
@@ -148,7 +149,7 @@ export default function AdminPage() {
           </p>
         </div>
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card
             className="hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => router.push("/calendar")}
@@ -196,6 +197,23 @@ export default function AdminPage() {
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Manage companionships and assignments
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => router.push("/admin/metrics")}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BarChart3 className="h-5 w-5" />
+                Metrics & Analytics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                View system analytics and participation insights
               </p>
             </CardContent>
           </Card>
