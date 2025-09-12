@@ -24,10 +24,9 @@ A modern Next.js application for coordinating dinners between ward members and m
 New users are automatically prompted to complete their profile:
 
 - **Contact Information**: Phone number and address (optional)
-- **Notification Preferences**: Email, SMS, or both
-- **Notification Types**: Signup reminders, appointment reminders, change notifications
+- **Notification Preferences**: Email notifications for signup confirmations
+- **Notification Types**: Signup confirmations, appointment reminders, change notifications
 - **Reminder Timing**: How many days before dinner to send reminders
-- **Contact Method Validation**: Ensures phone number is provided if SMS notifications are selected
 
 ### User Roles
 
@@ -68,7 +67,7 @@ No pre-created database records for empty slots:
   role: "member" | "admin";
   onboardingCompleted: boolean;
   preferences: {
-    contactMethod: "email" | "sms" | "both";
+    emailNotifications: boolean;
     signupReminders: boolean;
     appointmentReminders: boolean;
     changeNotifications: boolean;
@@ -135,7 +134,7 @@ Contains all slot information directly embedded:
   dayOfWeek: string;
   guestCount: number;            // Number of missionaries eating
   status: "confirmed" | "pending" | "completed";
-  contactPreference: "email" | "phone" | "both";
+  contactPreference: "email";
   reminderSent: boolean;
   notes?: string;
   createdAt: Date;
@@ -203,7 +202,7 @@ fed/
 ### New User Flow
 
 1. **Sign in with Google** - Automatic account creation
-2. **Onboarding** - Set contact info and notification preferences with validation
+2. **Onboarding** - Set contact info and email notification preferences
 3. **Calendar Access** - Browse and sign up for dinner slots
 4. **Profile Management** - Edit preferences anytime via dedicated profile page
 
@@ -217,8 +216,7 @@ fed/
 - **Real-Time Updates**: See slot availability changes instantly without refresh
 - **Streamlined Signup**: Modal displays saved contact info with link to edit profile
 - **Dietary Information**: Clear display of missionary allergies and preferences
-- **Profile Management**: Dedicated profile page for contact info and notification preferences
-- **Smart Validation**: Contact method validation (phone required for SMS notifications)
+- **Profile Management**: Dedicated profile page for contact info and email notification preferences
 
 ### For Administrators
 
@@ -374,13 +372,26 @@ Firebase Firestore → Real-time Subscriptions → React State → UI Updates
    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
    ```
 
-3. **Set up Firestore security rules**
+3. **Configure Firebase Functions Environment**
+
+   ```bash
+   # Set required environment variables for Firebase Functions
+   firebase functions:config:set email.from="Your App Name <noreply@yourdomain.com>"
+   firebase functions:config:set app.base_url="https://yourdomain.com"
+
+   # For local development with emulator, create functions/.env
+   cd functions
+   echo "EMAIL_FROM=Your App Name <noreply@yourdomain.com>" > .env
+   echo "APP_BASE_URL=https://yourdomain.com" >> .env
+   ```
+
+4. **Set up Firestore security rules**
 
    ```bash
    firebase deploy --only firestore:rules
    ```
 
-4. **Start development with emulator**
+5. **Start development with emulator**
 
    ```bash
    # Start Firebase emulators
@@ -450,7 +461,7 @@ node scripts/seedEmulator.js seed        # Seed test data
 
 ### Phase 2: Enhanced Features (In Progress)
 
-- [ ] Email/SMS notification implementation (backend)
+- [ ] Email notification implementation (backend)
 - [ ] Automated reminder system with customizable timing
 - [ ] Signup modification and cancellation workflows
 - [ ] Enhanced admin reporting and analytics dashboard
@@ -461,7 +472,7 @@ node scripts/seedEmulator.js seed        # Seed test data
 
 ### Phase 3: Polish & Scale (Planned)
 
-- [ ] Complete notification delivery system with delivery tracking
+- [ ] Complete email notification system with delivery tracking
 - [ ] Advanced reporting and data export (CSV, PDF)
 - [ ] Enhanced error handling and recovery mechanisms
 - [ ] Performance optimization for large datasets and high concurrency
