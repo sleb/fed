@@ -44,18 +44,50 @@ export interface Missionary {
 }
 
 // Firebase-specific types for handling Firestore timestamps
-export interface SignupFirestore extends Omit<Signup, "dinnerDate" | "createdAt" | "updatedAt"> {
+export interface SignupFirestore
+  extends Omit<Signup, "dinnerDate" | "createdAt" | "updatedAt"> {
   dinnerDate: FirebaseFirestore.Timestamp;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
 
-export interface CompanionshipFirestore extends Omit<Companionship, "createdAt" | "updatedAt"> {
+export interface CompanionshipFirestore
+  extends Omit<Companionship, "createdAt" | "updatedAt"> {
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
 
-export interface MissionaryFirestore extends Omit<Missionary, "createdAt" | "updatedAt"> {
+export interface MissionaryFirestore
+  extends Omit<Missionary, "createdAt" | "updatedAt"> {
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
+}
+
+export interface SentReminder {
+  id: string;
+  signupId: string;
+  userId: string;
+  reminderType: "signup_reminder";
+  sentAt: Date;
+  emailStatus: "sent" | "failed" | "retry";
+  errorMessage?: string;
+}
+
+export interface AdminNotification {
+  id: string;
+  type: "email_failure";
+  message: string;
+  details: any;
+  createdAt: Date;
+  resolved: boolean;
+}
+
+// Firebase-specific types for handling Firestore timestamps
+export interface SentReminderFirestore extends Omit<SentReminder, "sentAt"> {
+  sentAt: FirebaseFirestore.Timestamp;
+}
+
+export interface AdminNotificationFirestore
+  extends Omit<AdminNotification, "createdAt"> {
+  createdAt: FirebaseFirestore.Timestamp;
 }
