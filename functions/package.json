@@ -8,7 +8,12 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "node test-runner.js",
+    "test:emulator": "firebase emulators:start --only firestore,functions --project demo-test-project",
+    "test:simple": "firebase emulators:exec --only firestore --project demo-test-project \"node test/simple.test.js\"",
+    "test:email": "node test/email.test.js",
+    "test:all": "npm run test:email && npm run test:simple"
   },
   "engines": {
     "node": "22"

@@ -16,6 +16,9 @@ A modern Next.js application for coordinating dinners between ward members and m
 - **🎯 Smart Calendar Navigation**: Multi-view calendar with mini-calendar widget
 - **🔍 Advanced Filtering**: Filter by companionship with persistent preferences
 - **♿ Accessibility First**: Screen reader support and keyboard navigation
+- **📧 Automated Email System**: Smart batched confirmations and customizable reminders
+- **🔔 Intelligent Reminders**: Daily scheduled reminders with duplicate prevention
+- **🛡️ Error Handling**: Admin notifications for delivery failures and comprehensive logging
 
 ## 🎯 Core Concepts
 
@@ -217,6 +220,9 @@ fed/
 - **Streamlined Signup**: Modal displays saved contact info with link to edit profile
 - **Dietary Information**: Clear display of missionary allergies and preferences
 - **Profile Management**: Dedicated profile page for contact info and email notification preferences
+- **Email Confirmations**: Batched signup confirmations with all dinner details
+- **Smart Reminders**: Customizable advance reminder emails (1-7 days before dinner)
+- **Rich Email Content**: Beautiful HTML emails with missionary info, contact details, and calendar links
 
 ### For Administrators
 
@@ -227,6 +233,7 @@ fed/
 - **Zero Maintenance**: No slot generation needed - dynamic slots from companionship schedules
 - **Real-time Monitoring**: Dashboard shows upcoming signups and member activity
 - **User Management**: View member profiles, contact preferences, and signup statistics
+- **Email System Monitoring**: Admin notifications for failed email deliveries
 - **Data Management**: Development tools for seeding test data and debugging
 
 ## 🔄 System Architecture Benefits
@@ -374,16 +381,28 @@ Firebase Firestore → Real-time Subscriptions → React State → UI Updates
 
 3. **Configure Firebase Functions Environment**
 
+   The email notification system requires two environment variables:
+
    ```bash
-   # Set required environment variables for Firebase Functions
+   # Set required environment variables for Firebase Functions (production)
    firebase functions:config:set email.from="Your App Name <noreply@yourdomain.com>"
    firebase functions:config:set app.base_url="https://yourdomain.com"
 
-   # For local development with emulator, create functions/.env
+   # Set up Resend API key for email delivery
+   firebase functions:secrets:set RESEND_API_KEY
+   # Enter your Resend API key when prompted
+   ```
+
+   For local development with emulator:
+
+   ```bash
    cd functions
    echo "EMAIL_FROM=Your App Name <noreply@yourdomain.com>" > .env
-   echo "APP_BASE_URL=https://yourdomain.com" >> .env
+   echo "APP_BASE_URL=http://localhost:3000" >> .env
+   echo "RESEND_API_KEY=your_resend_api_key_here" >> .env
    ```
+
+   **Note**: The functions will fail to start if these environment variables are not configured.
 
 4. **Set up Firestore security rules**
 
@@ -404,9 +423,77 @@ Firebase Firestore → Real-time Subscriptions → React State → UI Updates
    npm run dev
    ```
 
+## 📧 Email Notification System
+
+The system includes a comprehensive automated email notification system with the following features:
+
+### Signup Confirmations
+
+- **Batched Emails**: Multiple signups within 5 minutes are grouped into a single confirmation email
+- **Rich Content**: Includes all dinner details, missionary information, and contact details
+- **Beautiful Templates**: HTML emails with responsive design and plain text fallbacks
+
+### Automated Reminders
+
+- **Daily Scheduling**: Runs every day at 9 AM Mountain Time
+- **User Preferences**: Respects individual reminder settings (enabled/disabled)
+- **Customizable Timing**: Users can set reminders 1-7 days before their dinner
+- **Duplicate Prevention**: Tracks sent reminders to prevent multiple notifications
+- **Smart Scanning**: Only processes signups that need reminders on the current day
+
+### Email Templates
+
+- **Professional Design**: Gradient headers, clean layouts, mobile-responsive
+- **Complete Information**: Date, missionaries, area, guest count, notes, contact info
+- **Call-to-Action**: Direct links to calendar for easy access
+- **Accessibility**: Proper HTML structure for screen readers
+
+### Error Handling
+
+- **Admin Notifications**: Failed emails generate admin alerts with error details
+- **Graceful Degradation**: Missing data handled without breaking email generation
+- **Emulator Support**: Logs emails in development instead of sending
+
+### Configuration
+
+- **Environment Variables**: `EMAIL_FROM` and `APP_BASE_URL` must be configured
+- **Resend Integration**: Uses Resend API for reliable email delivery
+- **Security**: API keys stored as Firebase Function secrets
+
+## 🧪 Testing
+
+### Firebase Functions Tests
+
+The project includes comprehensive e2e tests for the reminder system:
+
+```bash
+cd functions
+
+# Run all tests
+npm run test:all
+
+# Run reminder logic tests (requires Firestore emulator)
+npm run test:simple
+
+# Run email generation tests (standalone)
+npm run test:email
+
+# Start emulator manually for testing
+npm run test:emulator
+```
+
+**Test Coverage:**
+
+- ✅ Reminder finding logic and user preferences
+- ✅ Duplicate prevention and tracking
+- ✅ Data validation and edge cases
+- ✅ Email generation (HTML/text) with special characters
+- ✅ Error handling and graceful failures
+
 ### Development Commands
 
 ```bash
+# Next.js development
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run start        # Start production server
@@ -415,6 +502,13 @@ npm run start        # Start production server
 node scripts/debugEmulator.js inspect    # Inspect database
 node scripts/debugEmulator.js clear      # Clear all data
 node scripts/seedEmulator.js seed        # Seed test data
+
+# Firebase Functions (in functions/ directory)
+cd functions
+npm run build        # Build functions
+npm run serve        # Start functions emulator
+npm run test:all     # Run all tests
+npm run deploy       # Deploy functions to production
 ```
 
 ## 🔒 Security
@@ -461,8 +555,16 @@ node scripts/seedEmulator.js seed        # Seed test data
 
 ### Phase 2: Enhanced Features (In Progress)
 
-- [ ] Email notification implementation (backend)
-- [ ] Automated reminder system with customizable timing
+- [x] **Email notification implementation (backend)** ✅ COMPLETE
+  - Batched confirmation emails for signups
+  - Beautiful HTML and plain text email templates
+  - Configurable sender and app URL via environment variables
+- [x] **Automated reminder system with customizable timing** ✅ COMPLETE
+  - Daily scheduled function (9 AM MT) scans for due reminders
+  - Respects user preferences (enabled/disabled, days before)
+  - Duplicate prevention with sent reminder tracking
+  - Admin notifications for email delivery failures
+  - Comprehensive e2e test coverage
 - [ ] Signup modification and cancellation workflows
 - [ ] Enhanced admin reporting and analytics dashboard
 - [ ] Bulk member management and import tools
@@ -495,6 +597,22 @@ node scripts/seedEmulator.js seed        # Seed test data
 - **Deployment**: Firebase App Hosting with Next.js optimization
 
 ## 📈 Recent Progress & Achievements
+
+### Automated Email Notification System ✅ COMPLETE
+
+- **Batched Signup Confirmations**: Groups multiple signups into single emails
+- **Intelligent Reminder System**: Daily scheduled reminders with customizable timing
+- **Rich Email Templates**: Beautiful HTML emails with fallback plain text
+- **Duplicate Prevention**: Tracks sent reminders to prevent spam
+- **Error Handling**: Admin notifications for failed email deliveries
+- **Environment Configuration**: Secure configuration via Firebase environment variables
+
+### Comprehensive Testing Infrastructure ✅ COMPLETE
+
+- **E2E Test Suite**: Tests core reminder logic against real Firestore emulator
+- **Email Generation Tests**: Validates HTML/text generation with edge cases
+- **Simple Test Commands**: Easy-to-run test suite with clear output
+- **Firebase Emulator Integration**: Realistic testing environment
 
 ### Calendar & Mobile UX Improvements
 
